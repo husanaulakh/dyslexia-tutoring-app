@@ -6,6 +6,7 @@ A small, static collection of tutor-led reading practice activities. The site is
 
 - **What’s Missing?** Letter sequence practice with configurable card count and missing-letter position.
 - **Blending Board** Sound-by-sound word blending with editable lesson word lists.
+- **Trace, Copy, Cover, Close** Tutor-set word practice with animated letter tracing and oral tutor checks.
 
 ## Deploy to Vercel
 
