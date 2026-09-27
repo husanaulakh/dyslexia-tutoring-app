@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>What's Missing Cards</title>
+  <style>
+    :root{
+      --bg:#f8faf5;
+      --card:#ffffff;
+      --ink:#243047;
+      --muted:#6d7a90;
+      --line:#e5e9ef;
+      --lime:#95d20f;
+      --lime-dark:#5f8f00;
+      --lime-soft:#effbd1;
+      --red:#e44747;
+      --red-soft:#ffe2e2;
+      --amber:#b16b00;
+      --amber-soft:#fff0cf;
+      --shadow:0 10px 28px rgba(39,50,71,.07);
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+    .home-link{position:fixed;z-index:5;top:14px;left:18px;padding:9px 15px;border:1px solid #e5e9ef;border-radius:999px;background:#fff;color:#243047;text-decoration:none;font-size:14px;font-weight:800;box-shadow:0 4px 16px rgba(39,50,71,.08)}
+    button,input{font:inherit}
+    button{cursor:pointer}
+
+    .page{min-height:100vh;padding:28px}
+    .wrap{max-width:1180px;margin:0 auto}
+    .wrap.narrow{max-width:940px}
+
+    .header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:28px}
+    .eyebrow{font-size:15px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--lime-dark)}
+    h1{font-size:clamp(38px,5vw,68px);line-height:1.02;margin:14px 0 10px;letter-spacing:-.04em}
+    h2{font-size:clamp(28px,4vw,44px);line-height:1.08;margin:0 0 10px;letter-spacing:-.03em}
+    h3{margin:0 0 8px;font-size:18px}
+    p{margin:0;color:var(--muted);line-height:1.55}
+
+    .btn{
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      border-radius:999px;
+      padding:13px 22px;
+      font-weight:700;
+      transition:.15s ease;
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn.primary{background:var(--lime);border-color:var(--lime);color:white}
+    .btn.full{width:100%}
+    .btn.large{padding:15px 28px;font-size:17px;min-width:150px}
+
+    .setup-grid{display:grid;grid-template-columns:340px 1fr;gap:24px}
+    .panel{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:30px;
+      box-shadow:var(--shadow);
+      padding:26px;
+    }
+
+    .field{margin:22px 0}
+    label{display:block;font-weight:750;margin-bottom:10px}
+    input[type="number"]{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px 18px;
+      color:var(--ink);
+      background:white;
+      outline:none;
+    }
+    input[type="number"]:focus{border-color:#b7dd5a}
+    .hint{font-size:13px;margin-top:8px}
+
+    .segments{display:flex;gap:9px;flex-wrap:wrap}
+    .segment{
+      border:1px solid var(--line);
+      background:white;
+      color:var(--ink);
+      border-radius:999px;
+      padding:10px 15px;
+      font-weight:700;
+    }
+    .segment.active{background:var(--lime);border-color:var(--lime);color:white}
+
+    .stats-list{border-top:1px solid #eef1f4;margin-top:24px;padding-top:18px;display:grid;gap:12px}
+    .stat-row{display:flex;justify-content:space-between;color:var(--muted)}
+    .stat-row b{color:var(--ink)}
+
+    .intro{display:flex;align-items:center;justify-content:center;min-height:520px;text-align:center}
+    .step-pill,.status-pill{
+      display:inline-flex;
+      align-items:center;
+      border-radius:999px;
+      padding:8px 15px;
+      background:var(--lime-soft);
+      color:#547c00;
+      font-size:14px;
+      font-weight:800;
+      margin-bottom:18px;
+    }
+    .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:28px auto 0;max-width:640px;text-align:left}
+    .mini{
+      border:1px solid #e6f0c7;
+      background:#f8fbf2;
+      border-radius:22px;
+      padding:20px;
+    }
+    .mini-num{font-size:13px;font-weight:900;letter-spacing:.16em;color:var(--lime-dark);margin-bottom:8px}
+
+    .preview-row,.exercise-row{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
+    .preview-row{margin-top:30px}
+    .tile{
+      display:flex;align-items:center;justify-content:center;
+      border-radius:28px;background:white;box-shadow:var(--shadow);
+      font-weight:800;user-select:none;
+    }
+    .tile.preview{width:104px;height:104px;font-size:46px}
+    .tile.review{width:112px;height:112px;font-size:56px;background:#f7faf2;color:#5e9700}
+    .tile.exercise{width:150px;height:150px;font-size:78px}
+    .tile.blank{border:3px dashed #cfe895;color:#8abf1e;box-shadow:none}
+    .tile.reveal-good{background:var(--lime-soft);color:#5d9300;outline:3px solid #cfe895}
+    .tile.reveal-wrong{background:var(--red-soft);color:var(--red);outline:3px solid #ffaaaa}
+
+    .review-box,.practice-box,.done-box{
+      background:white;border:1px solid var(--line);border-radius:32px;box-shadow:var(--shadow);
+      min-height:650px;padding:34px;display:flex;align-items:center;justify-content:center;text-align:center;
+    }
+    .review-grid{
+      display:grid;grid-template-columns:repeat(6,1fr);gap:18px;justify-items:center;
+      margin:34px 0 38px;
+    }
+
+    .practice-top{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:22px}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{background:white;border:1px solid var(--line);padding:9px 14px;border-radius:999px;color:var(--muted);font-size:14px}
+
+    .practice-box h2{font-size:clamp(48px,7vw,76px)}
+    .practice-sub{font-size:20px;margin-bottom:34px}
+    .exercise-row{margin:26px 0 42px;gap:24px}
+    .feedback-answer{font-size:28px;margin-bottom:8px;color:var(--ink)}
+    .feedback-answer .wrong{color:var(--red)}
+    .feedback-answer .right{color:#5d9300}
+    .feedback-note{font-size:18px;margin-bottom:30px}
+
+    .status-pill.wrong{background:var(--amber-soft);color:var(--amber)}
+    .buttons{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+
+    .done-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:520px;margin:26px auto 32px}
+    .done-stat{background:#f7faf2;border-radius:20px;padding:20px}
+    .done-stat span{display:block;color:var(--muted);font-size:14px;margin-bottom:6px}
+    .done-stat strong{font-size:30px}
+
+    @media (max-width:900px){
+      .setup-grid{grid-template-columns:1fr}
+      .cards3{grid-template-columns:1fr}
+      .review-grid{grid-template-columns:repeat(4,1fr)}
+      .tile.review{width:96px;height:96px;font-size:48px}
+      .tile.exercise{width:128px;height:128px;font-size:66px}
+    }
+    @media (max-width:620px){
+      .page{padding:18px}
+      .header{align-items:flex-start;flex-direction:column}
+      .review-grid{grid-template-columns:repeat(3,1fr);gap:12px}
+      .tile.review{width:84px;height:84px;font-size:42px}
+      .tile.exercise{width:104px;height:104px;font-size:58px}
+      .done-stats{grid-template-columns:1fr}
+      .practice-top{align-items:flex-start;flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+<a class="home-link" href="../" aria-label="Back to Bright Steps activities">← Bright Steps</a>
+<div id="app"></div>
+
+<script>
+(() => {
+  const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
+  const state = {
+    cardCount: 10,
+    missingMode: "middle",
+    deck: [],
+    phase: "setup",
+    completed: 0,
+    wrongCount: 0,
+    lastResult: null,
+    showAnswer: false,
+  };
+
+  const app = document.getElementById("app");
+
+  function shuffle(arr){
+    const copy=[...arr];
+    for(let i=copy.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [copy[i],copy[j]]=[copy[j],copy[i]];
+    }
+    return copy;
+  }
+
+  function buildTriplets(){
+    const out=[];
+    for(let i=0;i<=ALPHABET.length-3;i++) out.push(ALPHABET.slice(i,i+3));
+    return out;
+  }
+
+  function getMissingIndex(mode){
+    if(mode==="first") return 0;
+    if(mode==="middle") return 1;
+    if(mode==="last") return 2;
+    return Math.floor(Math.random()*3);
+  }
+
+  function makeDeck(){
+    const count=Math.max(1,Math.min(24,Number(state.cardCount)||10));
+    return shuffle(buildTriplets()).slice(0,count).map((letters,i)=>({
+      id:letters.join("")+"-"+i,
+      letters,
+      missingIndex:getMissingIndex(state.missingMode)
+    }));
+  }
+
+  function resetProgress(nextPhase){
+    state.deck=makeDeck();
+    state.completed=0;
+    state.wrongCount=0;
+    state.lastResult=null;
+    state.showAnswer=false;
+    state.phase=nextPhase;
+    render();
+  }
+
+  function btn(label, action, primary=false, extra=""){
+    return `<button class="btn ${primary?"primary":""} ${extra}" data-action="${action}">${label}</button>`;
+  }
+
+  function header(title, subtitle, actions=""){
+    return `
+      <div class="header">
+        <div>
+          <div class="eyebrow">What's Missing Cards</div>
+          <h1>${title}</h1>
+          <p>${subtitle}</p>
+        </div>
+        <div class="buttons">${actions}</div>
+      </div>`;
+  }
+
+  function renderSetup(){
+    const total=Math.max(1,Math.min(24,Number(state.cardCount)||10));
+    app.innerHTML = `
+      <main class="page">
+        <div class="wrap">
+          ${header("Find the missing letter","Choose the settings, review the alphabet, then begin the exercise.",btn("Start Over","start-over"))}
+          <div class="setup-grid">
+            <section class="panel">
+              <h3 style="font-size:26px;margin-bottom:24px">Settings</h3>
+
+              <div class="field">
+                <label for="cardCount">Number of cards</label>
+                <input id="cardCount" type="number" min="1" max="24" value="${state.cardCount}">
+                <p class="hint">Default = 10</p>
+              </div>
+
+              <div class="field">
+                <label>Missing letter position</label>
+                <div class="segments">
+                  ${["first","middle","last","random"].map(x=>`
+                    <button class="segment ${state.missingMode===x?"active":""}" data-mode="${x}">
+                      ${x[0].toUpperCase()+x.slice(1)}
+                    </button>`).join("")}
+                </div>
+              </div>
+
+              ${btn("Go to Letter Review","go-review",true,"full")}
+
+              <div class="stats-list">
+                <div class="stat-row"><span>Completed</span><b>${state.completed}</b></div>
+                <div class="stat-row"><span>Remaining</span><b>${state.deck.length || total}</b></div>
+                <div class="stat-row"><span>Wrong</span><b>${state.wrongCount}</b></div>
+                <div class="stat-row"><span>Progress</span><b>0%</b></div>
+              </div>
+            </section>
+
+            <section class="panel intro">
+              <div>
+                <div class="step-pill">Step 1 of 3</div>
+                <h2>Set up the exercise</h2>
+                <p>Choose your settings on the left, then move through the review screen and into the cards.</p>
+
+                <div class="cards3">
+                  <div class="mini"><div class="mini-num">1</div><h3>Choose settings</h3><p>Pick the number of cards and where the missing letter will go.</p></div>
+                  <div class="mini"><div class="mini-num">2</div><h3>Review letters</h3><p>Look over the alphabet together before starting the exercise.</p></div>
+                  <div class="mini"><div class="mini-num">3</div><h3>Play the cards</h3><p>Mark each one right or wrong and keep going until the set is done.</p></div>
+                </div>
+
+                <div class="preview-row">
+                  <div class="tile preview">a</div>
+                  <div class="tile preview blank">?</div>
+                  <div class="tile preview">c</div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>`;
+  }
+
+  function renderReview(){
+    app.innerHTML = `
+      <main class="page">
+        <div class="wrap">
+          ${header("Review the alphabet","Look through the letters first, then start the exercise when you're ready.",
+            btn("Back to Settings","back-settings")+btn("Start Over","start-over"))}
+          <section class="review-box">
+            <div>
+              <div class="step-pill">Step 2 of 3</div>
+              <h2>Letter review</h2>
+              <p>Say the alphabet together once. When you're ready, move into the card exercise.</p>
+
+              <div class="review-grid">
+                ${ALPHABET.map(l=>`<div class="tile review">${l}</div>`).join("")}
+              </div>
+
+              <div class="buttons">
+                ${btn("Back","back-settings")}
+                ${btn("Start Exercise","start-exercise",true)}
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>`;
+  }
+
+  function tile(letter,index,current,feedback=false){
+    const hidden=index===current.missingIndex;
+    if(!hidden) return `<div class="tile exercise">${letter}</div>`;
+    if(!feedback) return `<div class="tile exercise blank">?</div>`;
+    const wrong=state.lastResult==="wrong";
+    return `<div class="tile exercise ${wrong?"reveal-wrong":"reveal-good"}">${letter}</div>`;
+  }
+
+  function renderPractice(){
+    const current=state.deck[0];
+    if(!current){ state.phase="done"; render(); return; }
+
+    const feedback=state.phase==="feedback";
+    app.innerHTML = `
+      <main class="page">
+        <div class="wrap narrow">
+          <div class="practice-top">
+            <div class="chips">
+              <span class="chip">${state.completed} done</span>
+              <span class="chip">${state.deck.length} left</span>
+              <span class="chip">${state.wrongCount} wrong</span>
+            </div>
+            <div class="buttons">
+              ${btn("Review","review")}
+              ${btn("Exit","start-over")}
+            </div>
+          </div>
+
+          <section class="practice-box">
+            <div>
+              ${feedback
+                ? `<div class="status-pill ${state.lastResult==="wrong"?"wrong":""}">${state.lastResult==="right"?"Nice work!":"Almost, let's fix that one"}</div>`
+                : `<div class="status-pill" style="background:#f1f3f6;color:#68758a">Say the missing letter out loud</div>`
+              }
+
+              ${feedback ? "" : `<h2>What's missing?</h2><p class="practice-sub">Take a look, say it, then mark how it went.</p>`}
+
+              <div class="exercise-row">
+                ${current.letters.map((l,i)=>tile(l,i,current,feedback)).join("")}
+              </div>
+
+              ${!feedback ? `
+                <div class="buttons">
+                  ${btn("Right","right",true,"large")}
+                  ${btn("Wrong","wrong",false,"large")}
+                </div>
+              ` : `
+                <div class="feedback-answer">
+                  The missing letter is
+                  <strong class="${state.lastResult==="wrong"?"wrong":"right"}">
+                    ${current.letters[current.missingIndex]}
+                  </strong>
+                </div>
+                <p class="feedback-note">
+                  ${state.lastResult==="right"
+                    ? "Great. You got it, and now you can move on."
+                    : "This card has been placed back into the deck 3 cards later."}
+                </p>
+                <div class="buttons">
+                  ${btn("Next Card",state.lastResult==="right"?"next-right":"next-wrong",true,"large")}
+                  ${state.lastResult==="wrong"?btn("Review Letters","review"):""}
+                </div>
+              `}
+            </div>
+          </section>
+        </div>
+      </main>`;
+  }
+
+  function renderDone(){
+    const total=Math.max(1,Math.min(24,Number(state.cardCount)||10));
+    const score=Math.max(0,Math.round((total/(total+state.wrongCount))*100));
+    app.innerHTML = `
+      <main class="page">
+        <div class="wrap">
+          ${header("Final stats","You've finished the exercise. Here's how it went.",btn("Start Over","start-over"))}
+          <section class="done-box">
+            <div>
+              <div class="step-pill">Step 3 of 3</div>
+              <div style="font-size:62px;margin-bottom:10px">🎉</div>
+              <h2>All done!</h2>
+              <p>You finished all ${total} cards.</p>
+
+              <div class="done-stats">
+                <div class="done-stat"><span>Completed</span><strong>${state.completed}</strong></div>
+                <div class="done-stat"><span>Wrong</span><strong>${state.wrongCount}</strong></div>
+                <div class="done-stat"><span>Score</span><strong>${score}%</strong></div>
+              </div>
+
+              <div class="buttons">
+                ${btn("Play Again","go-review",true)}
+                ${btn("Review Letters","review")}
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>`;
+  }
+
+  function render(){
+    if(state.phase==="setup") renderSetup();
+    else if(state.phase==="review") renderReview();
+    else if(state.phase==="play" || state.phase==="feedback") renderPractice();
+    else renderDone();
+  }
+
+  document.addEventListener("click",(e)=>{
+    const modeBtn=e.target.closest("[data-mode]");
+    if(modeBtn){
+      state.missingMode=modeBtn.dataset.mode;
+      render();
+      return;
+    }
+
+    const actionBtn=e.target.closest("[data-action]");
+    if(!actionBtn) return;
+    const action=actionBtn.dataset.action;
+
+    if(action==="start-over") resetProgress("setup");
+    if(action==="go-review") resetProgress("review");
+    if(action==="back-settings"){state.phase="setup";render();}
+    if(action==="start-exercise"){state.phase="play";render();}
+    if(action==="review"){state.phase="review";render();}
+    if(action==="right"){state.lastResult="right";state.showAnswer=true;state.phase="feedback";render();}
+    if(action==="wrong"){state.lastResult="wrong";state.wrongCount+=1;state.showAnswer=true;state.phase="feedback";render();}
+    if(action==="next-right"){
+      state.deck=state.deck.slice(1);
+      state.completed+=1;
+      state.lastResult=null;
+      state.showAnswer=false;
+      state.phase=state.deck.length===0?"done":"play";
+      render();
+    }
+    if(action==="next-wrong"){
+      const retry={...state.deck[0]};
+      const rest=state.deck.slice(1);
+      const at=Math.min(3,rest.length);
+      state.deck=[...rest.slice(0,at),retry,...rest.slice(at)];
+      state.lastResult=null;
+      state.showAnswer=false;
+      state.phase="play";
+      render();
+    }
+  });
+
+  document.addEventListener("input",(e)=>{
+    if(e.target.id==="cardCount"){
+      state.cardCount=e.target.value;
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

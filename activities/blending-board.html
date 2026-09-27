@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dyslexia Blending Board</title>
+<style>
+:root{--bg:#fff7ed;--panel:#fff;--ink:#0f172a;--muted:#64748b;--orange:#fb923c;--orange2:#ffedd5;--slate:#0f172a;--slate2:#f1f5f9;--green:#bef264}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+.home-link{display:inline-flex;margin:0 0 14px;padding:9px 15px;border:1px solid #fed7aa;border-radius:999px;background:#fff;color:#0f172a;text-decoration:none;font-size:14px;font-weight:800}
+button,input,textarea{font:inherit}button{cursor:pointer}.wrap{max-width:1180px;margin:auto;padding:28px 18px}.panel{background:#fff;border:1px solid #ffedd5;border-radius:26px;box-shadow:0 8px 28px rgba(15,23,42,.05)}
+header{padding:26px}.header{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;flex-wrap:wrap}.eyebrow{font-size:12px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:#ea580c}
+h1{font-size:clamp(34px,6vw,56px);line-height:1;margin:8px 0 10px}.sub{max-width:700px;color:var(--muted);line-height:1.5}.filters{display:flex;flex-direction:column;gap:8px}.row{display:flex;gap:8px;flex-wrap:wrap}
+.pill{border:0;border-radius:999px;padding:10px 14px;font-weight:800;background:var(--orange2);color:#334155}.pill.secondary{background:var(--slate2)}.pill.active{background:var(--slate);color:#fff}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;margin-top:22px}.board{padding:28px}.topline{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+.label{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.16em;color:var(--muted)}.current{font-size:36px;font-weight:950;margin-top:6px;text-transform:lowercase}.mode{background:var(--orange2);border-radius:16px;padding:12px 15px;font-size:14px;font-weight:800}
+.stage{margin-top:24px;background:var(--slate);border-radius:26px;padding:28px}.cards{display:grid;gap:16px}.cards.three{grid-template-columns:repeat(3,1fr)}.cards.four{grid-template-columns:repeat(4,1fr)}
+.card{min-height:220px;border:4px solid rgba(255,255,255,.25);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:clamp(64px,8vw,108px);font-weight:950;color:var(--ink);box-shadow:0 18px 38px rgba(0,0,0,.24);transition:.16s}
+.card:hover{transform:translateY(-2px) scale(1.015)}.card.clicked{border-color:var(--green)}.empty{min-height:220px;border-radius:22px;background:#111827;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:26px;font-weight:800}
+.prompt{margin-top:20px;background:var(--orange2);border-radius:22px;padding:18px;text-align:center}.prompt strong{font-size:28px}.actions{margin-top:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.btn{border:0;border-radius:16px;padding:13px 14px;font-weight:900;background:var(--slate2);color:#334155}.btn.primary{background:var(--slate);color:#fff}.btn.orange{background:#f97316;color:#fff}.btn.soft{background:var(--orange2)}
+aside{display:flex;flex-direction:column;gap:18px}aside .panel{padding:20px}.section-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.section-title{font-size:21px;font-weight:950}.small{font-size:13px;color:var(--muted);line-height:1.4}
+.toggle,.clear{border:0;border-radius:12px;padding:9px 11px;font-weight:800}.toggle{background:var(--orange2)}.clear{background:var(--slate2);color:#475569}.tools{margin-top:16px;display:flex;flex-direction:column;gap:16px}
+.control label{display:block;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:7px}input,textarea{width:100%;border:1px solid #fed7aa;border-radius:14px;background:#fff7ed;padding:11px 12px;outline:none;font-weight:700;color:var(--ink)}
+textarea{resize:vertical;min-height:100px}.input-row{display:flex;gap:8px}.input-row input{flex:1;min-width:0}.add{border:0;border-radius:14px;background:var(--slate);color:#fff;padding:0 15px;font-size:22px;font-weight:900}.seg{display:flex;gap:7px;flex-wrap:wrap}.seg button{border:0;border-radius:12px;padding:9px 11px;background:var(--orange2);font-weight:800;color:#334155}.seg button.active{background:var(--slate);color:#fff}
+.feedback{background:#ecfccb;border-radius:14px;padding:11px 12px;font-weight:800;font-size:13px}.preview{background:var(--orange2);border-radius:14px;padding:11px 12px}.dict-actions{display:flex;gap:8px}.dict-list{margin-top:15px;max-height:520px;overflow:auto;padding-right:3px}.dict-group{margin-bottom:18px}.dict-group-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.count{font-size:11px;font-weight:900;background:var(--orange2);border-radius:999px;padding:4px 8px}
+.word-row{display:flex;align-items:center;gap:9px;background:#fff7ed;border-radius:16px;padding:10px 11px;margin-bottom:7px}.word-main{flex:1;min-width:0;border:0;background:transparent;text-align:left;padding:0}.wordline{display:flex;align-items:center;justify-content:space-between;gap:8px}.word{font-size:18px;font-weight:950;text-transform:lowercase}.chunks{font-size:12px;font-weight:700;color:var(--muted)}
+.tag{font-size:10px;font-weight:900;border-radius:999px;padding:5px 7px;white-space:nowrap}.tag.current{background:var(--orange2);color:#c2410c}.tag.previous{background:#e2e8f0;color:#475569}.delete{border:0;background:transparent;color:#94a3b8;font-size:18px;padding:5px}.delete:hover{color:#ef4444}
+@media(max-width:920px){.layout{grid-template-columns:1fr}.cards.four{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.board{padding:18px}.stage{padding:16px}.card{min-height:150px}.actions{grid-template-columns:repeat(2,1fr)}.cards.three,.cards.four{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="home-link" href="../" aria-label="Back to Bright Steps activities">← Bright Steps</a>
+<header class="panel"><div class="header">
+<div><div class="eyebrow">Blending board</div><h1>Click, change, blend.</h1><div class="sub">Each card is one sound or letter. The tutor clicks a card to change it, and the student blends the word.</div></div>
+<div class="filters"><div class="row" id="soundFilters"></div><div class="row" id="lessonFilters"></div></div>
+</div></header>
+
+<div class="layout">
+<section class="panel board">
+<div class="topline"><div><div class="label">Current blend</div><div class="current" id="currentWord">fan</div></div><div class="mode" id="modeBadge"></div></div>
+<div class="stage" id="stage"></div>
+<div class="prompt" id="prompt" style="display:none"><div class="label" style="color:#c2410c">Tutor prompt</div><div style="margin-top:8px;font-weight:800">Click any card to change that sound. Student says each sound, then blends:<strong id="promptText"></strong></div></div>
+<div class="actions"><button class="btn primary" id="nextBtn">Next word</button><button class="btn orange" id="randomBtn">Random</button><button class="btn soft" id="startBtn">Start list</button><button class="btn" id="resetBtn">Reset all</button></div>
+</section>
+
+<aside>
+<section class="panel">
+<div class="section-head"><div><div class="section-title">Tutor tools</div><div class="small">Add 3 or 4 sound blending words.</div></div><button class="toggle" id="toolsToggle">Hide</button></div>
+<div class="tools" id="toolsBody">
+<div class="control" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff7ed;border-radius:14px;padding:11px 12px"><div><div style="font-weight:900">Tutor prompt panel</div><div class="small">Show or hide the prompt under the board.</div></div><button class="toggle" id="promptToggle">Show</button></div>
+<div class="control"><label>Single word</label><div class="input-row"><input id="singleWord" placeholder="e.g. ship" maxlength="4"><button class="add" id="addSingle">+</button></div></div>
+<div class="control"><label>Sound split</label><input id="soundSplit" placeholder="e.g. sh i p"><div class="small" style="margin-top:6px">Use spaces for sounds. Example: ship = sh i p. Stop = s t o p.</div><div class="preview" id="preview" style="display:none;margin-top:8px"></div></div>
+<div class="control"><label>Single word lesson tag</label><div class="seg" id="singleTagSeg"></div></div>
+<div class="control"><label>Bulk add</label><textarea id="bulkWords" placeholder="Paste words like: spin, whip, bat, pan"></textarea><div class="small" style="margin-top:6px">Comma separated, space separated, or new lines all work.</div></div>
+<div class="control"><label>Bulk add lesson tag</label><div class="seg" id="bulkTagSeg"></div><div class="small" style="margin-top:6px">Default is This lesson. Switch to Review before adding older lesson words.</div><button class="btn orange" id="addBulk" style="width:100%;margin-top:9px">Add bulk words</button></div>
+<div class="feedback" id="feedback" style="display:none"></div>
+</div></section>
+
+<section class="panel">
+<div class="section-head"><div><div class="section-title">Word dictionary</div><div class="small">Click any word to load it onto the board.</div></div><div class="dict-actions"><button class="clear" id="clearAll">Clear all</button><button class="toggle" id="dictToggle">Hide</button></div></div>
+<div class="dict-list" id="dictionary"></div>
+</section>
+</aside>
+</div></div>
+
+<script>
+const INITIAL_WORDS=[
+["cat",["c","a","t"]],["bat",["b","a","t"]],["hat",["h","a","t"]],["mat",["m","a","t"]],["sat",["s","a","t"]],["rat",["r","a","t"]],["pat",["p","a","t"]],["fat",["f","a","t"]],
+["cab",["c","a","b"]],["cap",["c","a","p"]],["can",["c","a","n"]],["cot",["c","o","t"]],["cut",["c","u","t"]],["cup",["c","u","p"]],["dog",["d","o","g"]],["dig",["d","i","g"]],
+["dip",["d","i","p"]],["hid",["h","i","d"]],["him",["h","i","m"]],["hit",["h","i","t"]],["dug",["d","u","g"]],["sun",["s","u","n"]],["map",["m","a","p"]],["pig",["p","i","g"]],["pit",["p","i","t"]],
+["fan",["f","a","n"]],["hop",["h","o","p"]],["ship",["sh","i","p"]],["shop",["sh","o","p"]],["chip",["ch","i","p"]],["chat",["ch","a","t"]],["thin",["th","i","n"]],["that",["th","a","t"]],
+["fish",["f","i","sh"]],["cash",["c","a","sh"]],["stop",["s","t","o","p"]],["frog",["f","r","o","g"]],["clip",["c","l","i","p"]],["flag",["f","l","a","g"]],["drip",["d","r","i","p"]],
+["plug",["p","l","u","g"]],["milk",["m","i","l","k"]],["jump",["j","u","m","p"]],["hand",["h","a","n","d"]],["desk",["d","e","s","k"]],["tent",["t","e","n","t"]],["tim",["t","i","m"]],
+["belt",["b","e","l","t"]],["pond",["p","o","n","d"]],["lamp",["l","a","m","p"]],["nest",["n","e","s","t"]],["soft",["s","o","f","t"]]
+].map(([word,chunks])=>({word,chunks,lessonTag:"current"}));
+
+const $=s=>document.querySelector(s), vowels=new Set(["a","e","i","o","u"]), digraphs=["ch","sh","th","ck","wh","ph","ng"];
+let state={words:loadWords(),soundMode:"3",lessonMode:"current",currentChunks:["f","a","n"],lastClicked:null,showPrompt:false,showTools:true,showDictionary:true,singleTag:"current",bulkTag:"current"};
+
+function loadWords(){try{const x=JSON.parse(localStorage.getItem("blending-board-words-standalone")||"null");if(Array.isArray(x))return x.map(n)}catch(e){}return INITIAL_WORDS.map(x=>({...x,chunks:[...x.chunks]}))}
+function n(i){return {...i,lessonTag:i.lessonTag==="previous"?"previous":"current"}}
+function save(){localStorage.setItem("blending-board-words-standalone",JSON.stringify(state.words))}
+function clean(v){return(v||"").toLowerCase().replace(/[^a-z]/g,"")}
+function autoChunk(w){const o=[];let i=0;while(i<w.length){const p=w.slice(i,i+2);if(digraphs.includes(p)){o.push(p);i+=2}else{o.push(w[i]);i++}}return o}
+function parse(raw,w){const c=(raw||"").toLowerCase().replace(/[^a-z\s,-]/g,"").trim();if(!c)return autoChunk(w);const a=c.split(/[\s,-]+/).filter(Boolean);return a.join("")===w&&a.length>=3&&a.length<=4?a:autoChunk(w)}
+function lessonLabel(t){return t==="previous"?"Review":"This lesson"} function key(c){return c.join("|")} function word(){return state.currentChunks.join("")}
+function valid(){return state.words.filter(i=>{const s=state.soundMode==="both"?[3,4].includes(i.chunks.length):i.chunks.length===Number(state.soundMode);const l=state.lessonMode==="both"||i.lessonTag===state.lessonMode;return s&&l})}
+function same(a,b,j){return a.length===b.length&&a.every((x,i)=>i===j||x===b[i])}
+function feedback(m){const e=$("#feedback");e.textContent=m;e.style.display=m?"block":"none"}
+function chunkBg(ch){const ls=ch.replace(/[^a-z]/g,"").split(""),v=ls.some(x=>vowels.has(x)),c=ls.some(x=>!vowels.has(x));if(v&&c){const fv=vowels.has(ls[0]||"");const l=fv?"#fb923c":"#fff",r=fv?"#fff":"#fb923c";return`linear-gradient(90deg,${l} 0%,${l} 50%,${r} 50%,${r} 100%)`}return v?"#fb923c":"#fff"}
+
+function ensureCurrent(){const v=valid();if(!v.length){state.currentChunks=[];return}if(!v.some(x=>key(x.chunks)===key(state.currentChunks)))state.currentChunks=[...v[0].chunks]}
+function renderFilters(){
+ const s=[["3","3 sounds"],["4","4 sounds"],["both","3 + 4 sounds"]];$("#soundFilters").innerHTML=s.map(([k,l])=>`<button class="pill ${state.soundMode===k?"active":""}" data-s="${k}">${l}</button>`).join("");document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{state.soundMode=b.dataset.s;ensureCurrent();render()});
+ const l=[["current","This lesson"],["previous","Review"],["both","All words"]];$("#lessonFilters").innerHTML=l.map(([k,t])=>`<button class="pill secondary ${state.lessonMode===k?"active":""}" data-l="${k}">${t}</button>`).join("");document.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{state.lessonMode=b.dataset.l;ensureCurrent();render()})
+}
+function renderBoard(){
+ $("#currentWord").textContent=word()||"—";$("#modeBadge").textContent=`Practice set: ${state.lessonMode==="both"?"All words":state.lessonMode==="previous"?"Review":"This lesson"} • ${state.soundMode==="both"?"3 + 4 sounds":state.soundMode+" sounds"}`;
+ const st=$("#stage");if(!state.currentChunks.length)st.innerHTML='<div class="empty">No words in this practice set yet. Add words in Tutor tools, change the filters, or reset the starter list.</div>';else{st.innerHTML=`<div class="cards ${state.currentChunks.length===3?"three":"four"}">${state.currentChunks.map((c,i)=>`<button class="card ${state.lastClicked===i?"clicked":""}" data-p="${i}" style="background:${chunkBg(c)}">${c}</button>`).join("")}</div>`;st.querySelectorAll(".card").forEach(b=>b.onclick=()=>cycle(Number(b.dataset.p)))}
+ $("#prompt").style.display=state.showPrompt?"block":"none";$("#promptText").textContent=state.currentChunks.length?` ${state.currentChunks.join(" ")} → ${word()}`:""
+}
+function cycle(p){const v=valid();if(!v.length||!state.currentChunks.length)return;const m=v.filter(x=>same(x.chunks,state.currentChunks,p)).sort((a,b)=>(a.chunks[p]||"").localeCompare(b.chunks[p]||""));if(m.length>1){const i=m.findIndex(x=>key(x.chunks)===key(state.currentChunks)),nx=m[(i+1+m.length)%m.length];state.currentChunks=[...nx.chunks];feedback(`Changed sound ${p+1}: ${nx.chunks.join(" • ")} = ${nx.word}`)}else{const a=v.filter(x=>key(x.chunks)!==key(state.currentChunks));if(a.length){const nx=a[Math.floor(Math.random()*a.length)];state.currentChunks=[...nx.chunks];feedback(`Switched to ${nx.word}.`)}}state.lastClicked=p;renderBoard()}
+function nextWord(){const v=valid();if(!v.length)return;const i=v.findIndex(x=>key(x.chunks)===key(state.currentChunks));state.currentChunks=[...v[(i+1+v.length)%v.length].chunks];state.lastClicked=null;renderBoard()}
+function randomWord(){const v=valid();if(!v.length)return;state.currentChunks=[...v[Math.floor(Math.random()*v.length)].chunks];state.lastClicked=null;renderBoard()}
+function startList(){const v=valid();if(!v.length)return;state.currentChunks=[...v[0].chunks];state.lastClicked=null;renderBoard()}
+function choose(i){const x=state.words[i];if(!x)return;if(state.soundMode!=="both")state.soundMode=String(x.chunks.length);if(state.lessonMode!=="both")state.lessonMode=x.lessonTag;state.currentChunks=[...x.chunks];state.lastClicked=null;render()}
+function removeWord(i){state.words.splice(i,1);save();ensureCurrent();feedback("Removed word.");render()}
+
+function tagSeg(sel,val,set){const r=$(sel);r.innerHTML=[["current","This lesson"],["previous","Review"]].map(([k,l])=>`<button class="${val===k?"active":""}" data-tag="${k}">${l}</button>`).join("");r.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>set(b.dataset.tag))}
+function renderTools(){$("#toolsBody").style.display=state.showTools?"flex":"none";$("#toolsToggle").textContent=state.showTools?"Hide":"Show";$("#promptToggle").textContent=state.showPrompt?"Hide":"Show";tagSeg("#singleTagSeg",state.singleTag,k=>{state.singleTag=k;renderTools()});tagSeg("#bulkTagSeg",state.bulkTag,k=>{state.bulkTag=k;renderTools()});preview()}
+function preview(){const w=clean($("#singleWord").value),e=$("#preview");if(!w){e.style.display="none";return}const c=parse($("#soundSplit").value,w);e.style.display="block";e.innerHTML=`<div class="label" style="color:#c2410c">Preview</div><div style="margin-top:5px;font-size:18px;font-weight:900">${w}: ${c.join(" • ")}</div>`}
+function addSingle(){const w=clean($("#singleWord").value);if(w.length<3||w.length>4){feedback("Add a valid 3 or 4 letter word.");return}const c=parse($("#soundSplit").value,w);if(c.length<3||c.length>4){feedback("Split the word into 3 or 4 sounds/letters.");return}const k=w+"|"+key(c),i=state.words.findIndex(x=>x.word+"|"+key(x.chunks)===k),it={word:w,chunks:c,lessonTag:state.singleTag};if(i>=0)state.words[i]=it;else state.words.push(it);save();state.currentChunks=[...c];state.soundMode=String(c.length);state.lessonMode=state.singleTag;$("#singleWord").value="";$("#soundSplit").value="";feedback(`${i>=0?"Updated":"Added"} ${w} (${lessonLabel(state.singleTag)}).`);render()}
+function addBulk(){const toks=($("#bulkWords").value.match(/[a-zA-Z]+/g)||[]).map(clean).filter(w=>w.length>=3&&w.length<=4),d=[...new Set(toks)];let a=0,u=0;d.forEach(w=>{const c=autoChunk(w);if(c.length<3||c.length>4)return;const k=w+"|"+key(c),i=state.words.findIndex(x=>x.word+"|"+key(x.chunks)===k),it={word:w,chunks:c,lessonTag:state.bulkTag};if(i>=0){state.words[i]=it;u++}else{state.words.push(it);a++}});save();$("#bulkWords").value="";feedback(`${a?"Added "+a+" ":""}${u?(a?"and ":"")+"updated "+u+" ":""}${a+u===1?"word":"words"} as ${lessonLabel(state.bulkTag)}.`);ensureCurrent();render()}
+function renderDict(){$("#dictionary").style.display=state.showDictionary?"block":"none";$("#dictToggle").textContent=state.showDictionary?"Hide":"Show";$("#clearAll").style.display=state.words.length?"inline-block":"none";if(!state.showDictionary)return;const g={3:[],4:[]};state.words.forEach((it,i)=>{if(g[it.chunks.length])g[it.chunks.length].push({it,i})});$("#dictionary").innerHTML=[3,4].map(n=>{const r=g[n];if(!r.length)return"";return`<div class="dict-group"><div class="dict-group-head"><div class="label">${n} sounds</div><div class="count">${r.length}</div></div>${r.map(({it,i})=>`<div class="word-row"><button class="word-main" data-c="${i}"><div class="wordline"><div><div class="word">${it.word}</div><div class="chunks">${it.chunks.join(" • ")}</div></div><span class="tag ${it.lessonTag}">${lessonLabel(it.lessonTag)}</span></div></button><button class="delete" data-r="${i}">×</button></div>`).join("")}</div>`}).join("");document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>choose(Number(b.dataset.c)));document.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>removeWord(Number(b.dataset.r)))}
+function clearAll(){state.words=[];state.currentChunks=[];state.lastClicked=null;save();feedback("Cleared all words from the dictionary.");render()}
+function resetAll(){state.words=INITIAL_WORDS.map(x=>({...x,chunks:[...x.chunks]}));state.soundMode="3";state.lessonMode="current";state.currentChunks=["f","a","n"];state.singleTag="current";state.bulkTag="current";state.lastClicked=null;save();feedback("Dictionary reset to the starter word list.");render()}
+function render(){renderFilters();renderBoard();renderTools();renderDict()}
+
+$("#nextBtn").onclick=nextWord;$("#randomBtn").onclick=randomWord;$("#startBtn").onclick=startList;$("#resetBtn").onclick=resetAll;$("#clearAll").onclick=clearAll;
+$("#toolsToggle").onclick=()=>{state.showTools=!state.showTools;renderTools()};$("#dictToggle").onclick=()=>{state.showDictionary=!state.showDictionary;renderDict()};$("#promptToggle").onclick=()=>{state.showPrompt=!state.showPrompt;renderTools();renderBoard()};
+$("#addSingle").onclick=addSingle;$("#addBulk").onclick=addBulk;$("#singleWord").addEventListener("input",e=>{e.target.value=clean(e.target.value).slice(0,4);preview()});$("#soundSplit").addEventListener("input",preview);$("#singleWord").addEventListener("keydown",e=>{if(e.key==="Enter")addSingle()});
+ensureCurrent();render();
+</script>
+</body></html>
