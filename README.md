@@ -9,7 +9,7 @@ A small, static collection of tutor-led reading practice activities. The site is
 - **Trace, Copy, Cover, Close** Tutor-set word practice with animated letter tracing and oral tutor checks.
 - **UFLI Virtual Blending Board** An embedded link to the UF Literacy Institute’s externally hosted board; internet access is required.
 - **Visual Drill Cards** An original front/back keyword deck with staged single-letter cards and later phonics patterns.
-- **Reading Words** Tutor-managed word lists with spaced review after three other cards.
+- **Reading Words** Tutor-managed word lists; only missed words return after three other cards.
 - **Paragraph Reading** Tutor-managed passage lists with spaced rereading after three other cards.
 - **Student Scope & Sequence** Per-student assessment tracking for Level 1, Level 2, and Level 3 concepts from the tutor-provided sequence.
 

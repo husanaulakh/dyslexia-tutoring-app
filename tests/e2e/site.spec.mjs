@@ -166,7 +166,7 @@ test('visual drill cards flip, filter, and navigate with keyboard', async ({ pag
   await expect(page.locator('#cardCount')).toContainText('of 2');
 });
 
-test('Reading Words supports multiple tutor lists, spaced review, and per-student history', async ({ page }) => {
+test('Reading Words reviews only missed words, spaces their retry, and saves per-student history', async ({ page }) => {
   await page.goto('/activities/reading-words.html');
   await expect(page.getByLabel('Words in this list')).toHaveValue(/tap.*duck.*rub.*bog/s);
   await page.getByLabel('Add a student (first name or initials)').fill('Alex');
@@ -184,18 +184,26 @@ test('Reading Words supports multiple tutor lists, spaced review, and per-studen
   await expect(page.getByLabel('Words in this list')).toHaveValue('cat\ndog\npig\nsun');
   await page.getByRole('button', { name: 'Start reading' }).click();
   await expect(page.locator('#practiceWord')).toHaveText('cat');
-  for (const word of ['dog', 'pig', 'sun', 'cat']) {
-    await page.getByRole('button', { name: 'Next word' }).click();
-    await expect(page.locator('#practiceWord')).toHaveText(word);
-  }
+  await expect(page.locator('#wordProgressText')).toHaveText('Word 1 of 4');
+  await page.getByRole('button', { name: 'Got it right' }).click();
+  await expect(page.locator('#practiceWord')).toHaveText('dog');
+  await expect(page.locator('#wordProgressText')).toHaveText('Word 2 of 4');
+  await page.getByRole('button', { name: 'Got it wrong' }).click();
+  await expect(page.locator('#practiceWord')).toHaveText('pig');
+  await expect(page.locator('#wordProgressText')).toHaveText('Word 3 of 5');
+  await page.getByRole('button', { name: 'Got it right' }).click();
+  await expect(page.locator('#practiceWord')).toHaveText('sun');
+  await page.getByRole('button', { name: 'Got it right' }).click();
+  await expect(page.locator('#practiceWord')).toHaveText('dog');
   await expect(page.locator('#wordKind')).toHaveText('Read this word again');
-  await page.getByRole('button', { name: 'Back to tutor lists' }).click();
-  await expect(page.locator('#studentTracker')).toContainText('reading words: Short vowels · 4 of 8 items');
+  await page.getByRole('button', { name: 'Got it right' }).click();
+  await expect(page.locator('#doneText')).toContainText('1 missed word was reviewed once');
+  await expect(page.locator('#studentTracker')).toContainText('reading words: Short vowels · 5 of 5 items');
   await page.getByLabel('Current student').selectOption({ label: 'Jamie' });
   await expect(page.locator('#studentTracker')).toContainText('No sessions recorded yet.');
   await page.reload();
   await page.getByLabel('Current student').selectOption({ label: 'Alex' });
-  await expect(page.locator('#studentTracker')).toContainText('reading words: Short vowels · 4 of 8 items');
+  await expect(page.locator('#studentTracker')).toContainText('reading words: Short vowels · 5 of 5 items');
   await page.getByLabel('Choose a list').selectOption({ label: 'Short vowels' });
   await expect(page.getByLabel('Words in this list')).toHaveValue('cat\ndog\npig\nsun');
 });

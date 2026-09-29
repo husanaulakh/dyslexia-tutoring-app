@@ -21,7 +21,7 @@ function loadLists() {
   }
 }
 
-const state = { lists: loadLists(), selectedId: '', queue: [], total: 0, shown: 0, activeName: '', studentId: '', startedAt: 0, sessionSaved: false };
+const state = { lists: loadLists(), selectedId: '', queue: [], total: 0, shown: 0, completed: 0, reviewsScheduled: 0, activeName: '', studentId: '', startedAt: 0, sessionSaved: false };
 state.selectedId = state.lists[0].id;
 
 function selectedList() { return state.lists.find(list => list.id === state.selectedId) ?? state.lists[0]; }
@@ -67,8 +67,10 @@ function beginPractice() {
     return;
   }
   state.queue = buildReviewQueue(list.words);
-  state.total = state.queue.length * 2;
+  state.total = state.queue.length;
   state.shown = 1;
+  state.completed = 0;
+  state.reviewsScheduled = 0;
   state.activeName = list.name;
   state.studentId = student.id;
   state.startedAt = Date.now();
@@ -91,35 +93,44 @@ function renderWord() {
   elements.word.textContent = current.word;
   elements.word.classList.toggle('review-word', current.isReview);
   elements.hint.textContent = current.isReview
-    ? 'This is a spaced review word. Read it aloud, then continue.'
-    : 'Read the word aloud. It will return after three other words for another try.';
+    ? 'This word was missed earlier. Read it aloud again.'
+    : 'Read the word aloud. Choose “Got it wrong” to bring this word back after three others.';
   elements.word.focus({ preventScroll: true });
 }
-function nextWord() {
+function markWord(wasCorrect) {
   if (!state.queue.length) return;
-  state.queue = advanceReviewQueue(state.queue);
+  const current = state.queue[0];
+  state.queue = advanceReviewQueue(state.queue, wasCorrect);
+  state.completed += 1;
+  if (!wasCorrect && !current.isReview) {
+    state.total += 1;
+    state.reviewsScheduled += 1;
+  }
   if (!state.queue.length) { completePractice(); return; }
   state.shown += 1;
   renderWord();
 }
-function saveSession(completedItems) {
-  if (state.sessionSaved || !state.studentId || completedItems < 1) return;
+function saveSession() {
+  if (state.sessionSaved || !state.studentId || state.completed < 1) return;
   const result = tracker.recordSession({
     studentId: state.studentId, activity: 'Reading Words', listLabel: state.activeName,
-    completedItems, totalItems: state.total,
+    completedItems: state.completed, totalItems: state.total,
     durationSeconds: Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)),
   });
   state.sessionSaved = Boolean(result.ok);
 }
 function completePractice() {
-  saveSession(state.total);
+  saveSession();
   $('#studentTracker').hidden = false;
   elements.practice.hidden = true;
   elements.done.hidden = false;
-  $('#doneText').textContent = `You practised ${state.total} word cards from ${state.activeName}, with each word returning once for spaced review.`;
+  const reviewText = state.reviewsScheduled
+    ? `${state.reviewsScheduled} missed ${state.reviewsScheduled === 1 ? 'word was' : 'words were'} reviewed once after three others.`
+    : 'All words were marked correct, so no review cards were added.';
+  $('#doneText').textContent = `You practised ${state.completed} word cards from ${state.activeName}. ${reviewText}`;
 }
 function backToLists() {
-  saveSession(Math.min(state.shown - 1, state.total));
+  saveSession();
   $('#studentTracker').hidden = false;
   elements.practice.hidden = true;
   elements.done.hidden = true;
@@ -152,7 +163,8 @@ $('#addList').addEventListener('click', () => {
   elements.status.textContent = `Added List ${number}.`;
   elements.name.focus();
 });
-$('#nextWord').addEventListener('click', nextWord);
+$('#correctWord').addEventListener('click', () => markWord(true));
+$('#incorrectWord').addEventListener('click', () => markWord(false));
 $('#endPractice').addEventListener('click', backToLists);
 $('#backToLists').addEventListener('click', backToLists);
 $('#repeatList').addEventListener('click', beginPractice);

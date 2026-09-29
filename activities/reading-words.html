@@ -15,7 +15,7 @@
   <main class="shell">
     <nav class="nav" aria-label="Activity navigation"><a class="home" href="../">← Bright Steps</a></nav>
     <header class="intro">
-      <div><div class="eyebrow">Tutor-led word practice</div><h1>Reading Words</h1><p>Choose a lesson list and read one word at a time. Each word returns once after three other words.</p></div>
+      <div><div class="eyebrow">Tutor-led word practice</div><h1>Reading Words</h1><p>Choose a lesson list and read one word at a time. Only missed words return, after three other words.</p></div>
       <div class="word-art" aria-hidden="true"><span>tap</span><span>duck</span><span>bell</span></div>
     </header>
 
@@ -37,8 +37,9 @@
       <h2 id="practiceHeading" class="sr-only">Read the word</h2>
       <div class="progress-row"><span id="wordProgressText"></span><div class="progress" role="progressbar" aria-label="Word practice progress" aria-valuemin="0" aria-valuemax="20" aria-valuenow="1"><span id="progressFill"></span></div></div>
       <div class="word-card"><span class="card-label" id="wordKind">Read this word</span><strong id="practiceWord" tabindex="-1"></strong></div>
-      <div class="practice-actions"><button class="btn primary next-button" type="button" id="nextWord">Next word</button><button class="btn secondary" type="button" id="endPractice">Back to tutor lists</button></div>
-      <p class="practice-hint" id="practiceHint">Read the word aloud, then select Next word. It will return later for another try.</p>
+      <div class="practice-actions answer-actions"><button class="btn primary" type="button" id="correctWord">Got it right</button><button class="btn needs-review" type="button" id="incorrectWord">Got it wrong</button></div>
+      <div class="practice-actions"><button class="btn secondary" type="button" id="endPractice">Back to tutor lists</button></div>
+      <p class="practice-hint" id="practiceHint" aria-live="polite">Read the word aloud, then tell the tutor whether it was correct.</p>
     </section>
 
     <section class="panel done-panel" id="donePanel" aria-labelledby="doneHeading" hidden>

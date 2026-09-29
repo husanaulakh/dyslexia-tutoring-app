@@ -33,10 +33,10 @@ export function buildReviewQueue(words) {
   return parseReadingWords(words).map((word, index) => ({ id: `${index}-first`, word, isReview: false }));
 }
 
-export function advanceReviewQueue(queue) {
+export function advanceReviewQueue(queue, wasCorrect) {
   if (!Array.isArray(queue) || queue.length === 0) return [];
   const [current, ...remaining] = queue;
-  if (!current.isReview) {
+  if (wasCorrect === false && !current.isReview) {
     const review = { id: `${current.id}-review`, word: current.word, isReview: true };
     remaining.splice(Math.min(3, remaining.length), 0, review);
   }
