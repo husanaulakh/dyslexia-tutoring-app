@@ -12,6 +12,8 @@ import {
   normalizeStudentName,
   normalizeStudentProfile,
   recordStudentSession,
+  getStudentAssessmentProgress,
+  setStudentAssessmentStatus,
   setSelectedStudent,
 } from '../../assets/js/student-progress-store.mjs';
 
@@ -49,8 +51,21 @@ test('unversioned legacy data migrates to the current schema and validates recor
     'activity', 'completedAt', 'completedItems', 'id', 'listLabel', 'studentId', 'totalItems',
   ]);
   assert.deepEqual(migrateStudentData({ schemaVersion: 99, students: [{ id: 'x', name: 'X' }] }), {
-    schemaVersion: STUDENT_SCHEMA_VERSION, students: [], selectedStudentId: '', sessions: [],
+    schemaVersion: STUDENT_SCHEMA_VERSION, students: [], selectedStudentId: '', sessions: [], assessment: [],
   });
+});
+
+test('version 1 student data migrates without losing session history', () => {
+  const migrated = migrateStudentData({
+    schemaVersion: 1,
+    students: [{ id: 's1', name: 'Maya' }],
+    selectedStudentId: 's1',
+    sessions: [{ id: 'h1', studentId: 's1', activity: 'reading-words', completedItems: 2, totalItems: 3 }],
+  });
+  assert.equal(migrated.schemaVersion, 2);
+  assert.equal(migrated.students[0].name, 'Maya');
+  assert.equal(migrated.sessions.length, 1);
+  assert.deepEqual(migrated.assessment, []);
 });
 
 test('loadStudentData persists the migrated versioned schema under a stable key', () => {
@@ -117,4 +132,22 @@ test('sessions are bounded summaries and histories remain isolated by student', 
   assert.equal(getRecentStudentSessions(b.id, 5, storage).length, 0);
   assert.equal(getRecentStudentSessions(a.id, 0, storage).length, 0);
   assert.equal(recordStudentSession({ activity: 'reading-words', completedItems: 1, totalItems: 1 }, new BrokenStorage()).error, 'no-student');
+});
+
+test('scope assessment is validated, persisted per student, updated, and reset independently', () => {
+  const storage = new MemoryStorage();
+  const a = addStudentProfile('Student A', storage).student;
+  const b = addStudentProfile('Student B', storage).student;
+  assert.equal(setStudentAssessmentStatus(a.id, 'l1-short-vowels', 'developing', storage).ok, true);
+  assert.equal(setStudentAssessmentStatus(a.id, 'l1-short-vowels', 'secure', storage).ok, true);
+  assert.equal(setStudentAssessmentStatus(b.id, 'l1-short-vowels', 'introduced', storage).ok, true);
+  assert.equal(setStudentAssessmentStatus(a.id, 'l1-short-vowels', '', storage).ok, true);
+  assert.equal(getStudentAssessmentProgress(a.id, storage)['l1-short-vowels'], undefined);
+  assert.equal(getStudentAssessmentProgress(b.id, storage)['l1-short-vowels'].status, 'introduced');
+  assert.equal(setStudentAssessmentStatus(a.id, 'not-a-real-concept', 'secure', storage).error, 'invalid-item');
+  assert.equal(setStudentAssessmentStatus(a.id, 'l1-short-vowels', '<script>', storage).error, 'invalid-status');
+  assert.equal(setStudentAssessmentStatus('missing-student', 'l1-short-vowels', 'secure', storage).error, 'no-student');
+  const migrated = migrateStudentData(JSON.parse(storage.getItem(STUDENT_STORAGE_KEY)));
+  assert.equal(migrated.assessment.length, 1);
+  assert.equal(migrated.assessment[0].studentId, b.id);
 });

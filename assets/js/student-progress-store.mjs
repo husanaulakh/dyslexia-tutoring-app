@@ -1,3 +1,5 @@
+import { ASSESSMENT_ITEM_IDS } from '../../data/assessment-scope-sequence.mjs';
+
 /**
  * Local-only student profiles and short activity summaries.
  *
@@ -10,7 +12,7 @@
 // Keep the storage key stable as schemaVersion changes; migrations read the
 // versioned payload in place across app deployments.
 export const STUDENT_STORAGE_KEY = 'bright-steps-student-progress';
-export const STUDENT_SCHEMA_VERSION = 1;
+export const STUDENT_SCHEMA_VERSION = 2;
 export const MAX_STUDENTS = 30;
 export const MAX_SESSIONS = 500;
 export const MAX_SESSIONS_PER_STUDENT = 100;
@@ -21,6 +23,7 @@ const DEFAULT_DATA = () => ({
   students: [],
   selectedStudentId: '',
   sessions: [],
+  assessment: [],
 });
 
 function storageOrNull(storage) {
@@ -98,6 +101,19 @@ function normalizeSession(record, students, index) {
   return session;
 }
 
+const ASSESSMENT_STATUSES = new Set(['introduced', 'developing', 'secure', 'revisit']);
+
+function normalizeAssessmentRecord(record, students) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) return null;
+  const studentId = typeof record.studentId === 'string' ? record.studentId : '';
+  const itemId = typeof record.itemId === 'string' ? record.itemId : '';
+  const status = typeof record.status === 'string' ? record.status : '';
+  if (!students.some(student => student.id === studentId) || !ASSESSMENT_ITEM_IDS.has(itemId) || !ASSESSMENT_STATUSES.has(status)) return null;
+  const candidate = typeof record.updatedAt === 'string' ? record.updatedAt : '';
+  const updatedAt = Number.isFinite(Date.parse(candidate)) ? new Date(candidate).toISOString() : new Date(0).toISOString();
+  return { studentId, itemId, status, updatedAt };
+}
+
 function uniqueById(records) {
   const ids = new Set();
   return records.filter(record => {
@@ -115,7 +131,7 @@ function uniqueById(records) {
 export function migrateStudentData(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return DEFAULT_DATA();
   const version = value.schemaVersion ?? value.version ?? 0;
-  if (version !== 0 && version !== STUDENT_SCHEMA_VERSION) return DEFAULT_DATA();
+  if (version !== 0 && version !== 1 && version !== STUDENT_SCHEMA_VERSION) return DEFAULT_DATA();
 
   const rawStudents = Array.isArray(value.students) ? value.students : Array.isArray(value.profiles) ? value.profiles : [];
   const students = uniqueById(rawStudents.slice(0, MAX_STUDENTS)
@@ -128,7 +144,18 @@ export function migrateStudentData(value) {
   const sessions = uniqueById(rawSessions.map((session, index) => normalizeSession(session, students, index))
     .filter(Boolean))
     .slice(-MAX_SESSIONS);
-  return { schemaVersion: STUDENT_SCHEMA_VERSION, students, selectedStudentId, sessions };
+  const assessment = Array.isArray(value.assessment)
+    ? value.assessment.map(record => normalizeAssessmentRecord(record, students)).filter(Boolean).slice(-3000)
+    : [];
+  const uniqueAssessment = [];
+  const assessmentKeys = new Set();
+  for (const record of assessment) {
+    const key = `${record.studentId}:${record.itemId}`;
+    if (assessmentKeys.has(key)) continue;
+    assessmentKeys.add(key);
+    uniqueAssessment.push(record);
+  }
+  return { schemaVersion: STUDENT_SCHEMA_VERSION, students, selectedStudentId, sessions, assessment: uniqueAssessment };
 }
 
 /** Load and migrate the persistent store; `error` indicates unavailable or invalid storage. */
@@ -219,7 +246,28 @@ export function getRecentStudentSessions(studentId, limit = MAX_RECENT_SESSIONS,
   const { data } = loadStudentData(storage);
   const boundedLimit = Number.isFinite(limit) ? Math.max(0, Math.min(MAX_RECENT_SESSIONS, Math.floor(limit))) : MAX_RECENT_SESSIONS;
   if (boundedLimit === 0) return [];
-  if (boundedLimit === 0) return [];
   return data.sessions.filter(session => session.studentId === studentId).slice(-boundedLimit).reverse()
     .map(session => ({ ...session }));
+}
+
+/** Read the learner's assessed concepts as a map from scope item ID to record. */
+export function getStudentAssessmentProgress(studentId, storage) {
+  const { data } = loadStudentData(storage);
+  return Object.fromEntries(data.assessment
+    .filter(record => record.studentId === studentId)
+    .map(record => [record.itemId, { ...record }]));
+}
+
+/** Save one learner's scope status; an empty status clears the item back to not assessed. */
+export function setStudentAssessmentStatus(studentId, itemId, status, storage) {
+  if (typeof studentId !== 'string' || typeof itemId !== 'string' || !ASSESSMENT_ITEM_IDS.has(itemId)) {
+    return { ok: false, error: 'invalid-item' };
+  }
+  if (status !== '' && !ASSESSMENT_STATUSES.has(status)) return { ok: false, error: 'invalid-status' };
+  const { data } = loadStudentData(storage);
+  if (!data.students.some(student => student.id === studentId)) return { ok: false, error: 'no-student' };
+  data.assessment = data.assessment.filter(record => !(record.studentId === studentId && record.itemId === itemId));
+  if (status) data.assessment.push({ studentId, itemId, status, updatedAt: new Date().toISOString() });
+  if (!saveStudentData(data, storage)) return { ok: false, error: 'storage' };
+  return { ok: true, error: null };
 }

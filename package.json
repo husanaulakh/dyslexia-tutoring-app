@@ -11,6 +11,6 @@
     "test:unit": "node --test tests/unit/*.test.mjs",
     "test:e2e": "playwright test",
     "test": "npm run test:unit && npm run test:e2e",
-    "check": "node --check assets/js/whats-missing-cards.js && node --check assets/js/blending-board.js && node --check assets/js/trace-copy-cover-close.js && node --check assets/js/visual-drill-cards.js && node --check assets/js/learning-logic.mjs && node --check assets/js/ufli-embed.js && node --check assets/js/reading-words.js && node --check assets/js/reading-words-logic.mjs && node --check assets/js/paragraph-reading.js && node --check assets/js/paragraph-reading-logic.mjs && node --check assets/js/student-progress-store.mjs && node --check assets/js/student-tracker.js"
+    "check": "node --check assets/js/whats-missing-cards.js && node --check assets/js/blending-board.js && node --check assets/js/trace-copy-cover-close.js && node --check assets/js/visual-drill-cards.js && node --check assets/js/learning-logic.mjs && node --check assets/js/ufli-embed.js && node --check assets/js/reading-words.js && node --check assets/js/reading-words-logic.mjs && node --check assets/js/paragraph-reading.js && node --check assets/js/paragraph-reading-logic.mjs && node --check assets/js/student-progress-store.mjs && node --check assets/js/student-tracker.js && node --check assets/js/student-progress.js && node --check data/assessment-scope-sequence.mjs"
   }
 }

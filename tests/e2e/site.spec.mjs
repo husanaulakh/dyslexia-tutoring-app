@@ -9,6 +9,7 @@ const activities = [
   ['/activities/visual-drill-cards.html', 'Visual Drill Cards'],
   ['/activities/reading-words.html', 'Reading Words'],
   ['/activities/paragraph-reading.html', 'Paragraph Reading'],
+  ['/activities/student-progress.html', 'Student Scope & Sequence'],
 ];
 
 test('landing links to all activities and the site serves security headers', async ({ page, request }) => {
@@ -225,6 +226,32 @@ test('Paragraph Reading supports tutor lists, spaced review, and saved student s
   await expect(page.locator('#studentTracker')).toContainText('paragraph reading: Short passages · 4 of 10 items');
   await page.getByLabel('Choose a list').selectOption({ label: 'Short passages' });
   await expect(page.getByLabel('Paragraphs in this list')).toHaveValue(/First passage.*Fifth passage/s);
+});
+
+test('Student Scope & Sequence saves assessment statuses separately per student across reloads', async ({ page }) => {
+  await page.goto('/activities/student-progress.html');
+  await expect(page.getByRole('heading', { name: 'Student Scope & Sequence' })).toBeVisible();
+  await page.getByLabel('Add a student (first name or initials)').fill('Sam');
+  await page.getByRole('button', { name: 'Add student' }).click();
+  await page.getByLabel('Add a student (first name or initials)').fill('Ari');
+  await page.getByRole('button', { name: 'Add student' }).click();
+  await page.getByLabel('Current student').selectOption({ label: 'Sam' });
+  await page.locator('.level-group').nth(1).locator('summary').click();
+  await page.getByLabel('Status for Short vowel sounds').selectOption('developing');
+  await page.getByLabel('Status for Vowel team syllable').selectOption('secure');
+  await expect(page.locator('#selectedStudentSummary')).toContainText('Sam: 2 of');
+  await page.getByLabel('Current student').selectOption({ label: 'Ari' });
+  await expect(page.getByLabel('Status for Short vowel sounds')).toHaveValue('');
+  await page.getByLabel('Status for Short vowel sounds').selectOption('introduced');
+  await page.reload();
+  await page.getByLabel('Current student').selectOption({ label: 'Sam' });
+  await page.locator('.level-group').nth(1).locator('summary').click();
+  await expect(page.getByLabel('Status for Short vowel sounds')).toHaveValue('developing');
+  await expect(page.getByLabel('Status for Vowel team syllable')).toHaveValue('secure');
+  await expect(page.locator('#selectedStudentSummary')).toContainText('1 secure');
+  await page.getByLabel('Current student').selectOption({ label: 'Ari' });
+  await expect(page.getByLabel('Status for Short vowel sounds')).toHaveValue('introduced');
+  await expect(page.getByLabel('Status for Vowel team syllable')).toHaveValue('');
 });
 
 test('UFLI third-party frame makes no request until the tutor chooses to load it', async ({ page }) => {

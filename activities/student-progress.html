@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8faf5">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="A private, local scope-and-sequence progress tracker for tutor-led reading assessment.">
+  <title>Student Progress | Bright Steps</title>
+  <link rel="stylesheet" href="/assets/css/theme.css">
+  <link rel="stylesheet" href="/assets/css/student-tracker.css">
+  <link rel="stylesheet" href="/assets/css/student-progress.css">
+</head>
+<body>
+  <main class="progress-shell">
+    <nav class="progress-nav" aria-label="Progress navigation"><a href="../">← Bright Steps</a></nav>
+    <header class="progress-intro">
+      <div class="eyebrow">Tutor assessment</div>
+      <h1>Student Scope &amp; Sequence</h1>
+      <p>Keep a separate picture of each learner’s progress through the assessment concepts. Choose a status as you assess; it saves in this browser automatically.</p>
+    </header>
+
+    <div id="studentTracker" class="tracker-host"></div>
+
+    <section class="progress-panel" aria-labelledby="assessment-heading">
+      <div class="progress-overview">
+        <div>
+          <div class="eyebrow">Assessment overview</div>
+          <h2 id="assessment-heading">Scope &amp; Sequence</h2>
+          <p id="selectedStudentSummary" class="summary-text">Add or select a student to begin tracking.</p>
+        </div>
+        <div class="status-legend" aria-label="Progress status key">
+          <span><i class="status-dot introduced"></i>Introduced</span>
+          <span><i class="status-dot developing"></i>Developing</span>
+          <span><i class="status-dot secure"></i>Secure</span>
+          <span><i class="status-dot revisit"></i>Revisit</span>
+        </div>
+      </div>
+      <p class="save-status" id="assessmentStatus" role="status" aria-live="polite"></p>
+      <div id="assessmentLevels" class="assessment-levels"></div>
+      <p class="data-note">Statuses and last-updated dates stay in this browser on this device. They persist when the website is updated, but are not synced or backed up. Use initials or a non-identifying label and keep assessment notes elsewhere if they contain sensitive information.</p>
+    </section>
+  </main>
+  <script type="module" src="/assets/js/student-progress.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--brand-paper); color: var(--brand-ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.progress-shell { width: min(100% - 2rem, 1060px); margin: 0 auto; padding: 1.25rem 0 3rem; }
+.progress-nav { margin-bottom: 1.5rem; }
+.progress-nav a { color: var(--brand-green-dark); font-weight: 700; text-decoration: none; }
+.progress-nav a:hover { text-decoration: underline; }
+.progress-intro { max-width: 730px; margin-bottom: 1.4rem; }
+.eyebrow { color: var(--brand-green-dark); font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.progress-intro h1 { margin: .35rem 0 .5rem; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -.045em; }
+.progress-intro p,.summary-text { margin: 0; color: var(--brand-muted); line-height: 1.6; }
+.tracker-host { margin-bottom: 1rem; }
+.progress-panel { padding: clamp(1rem, 3vw, 1.5rem); border: 1px solid var(--brand-line); border-radius: 1.15rem; background: #fff; box-shadow: var(--brand-shadow); }
+.progress-overview { display: flex; justify-content: space-between; align-items: start; gap: 1rem; flex-wrap: wrap; }
+.progress-overview h2 { margin: .3rem 0 .4rem; font-size: 1.45rem; }
+.status-legend { display: flex; flex-wrap: wrap; gap: .45rem .8rem; color: #45556c; font-size: .8rem; }
+.status-legend span { display: inline-flex; align-items: center; gap: .35rem; }
+.status-dot { width: .65rem; height: .65rem; border-radius: 50%; background: #738094; }
+.status-dot.introduced { background: #2574a8; }
+.status-dot.developing { background: #9b5b00; }
+.status-dot.secure { background: #3c7008; }
+.status-dot.revisit { background: #a83f43; }
+.save-status { min-height: 1.25rem; margin: .8rem 0; color: var(--brand-green-dark); font-size: .85rem; }
+.assessment-levels { display: grid; gap: .8rem; }
+.level-group { overflow: hidden; border: 1px solid var(--brand-line); border-radius: .9rem; }
+.level-group > summary { padding: .95rem 1rem; background: #f2f6ec; color: var(--brand-ink); font-weight: 800; cursor: pointer; }
+.level-content { display: grid; gap: .8rem; padding: .8rem; }
+.strand { padding: .9rem; border: 1px solid #edf0eb; border-radius: .75rem; }
+.strand h3 { margin: 0 0 .7rem; font-size: 1rem; }
+.assessment-item { display: grid; grid-template-columns: minmax(0, 1fr) minmax(10rem, 13rem); align-items: center; gap: .65rem 1rem; padding: .7rem 0; border-top: 1px solid #edf0eb; }
+.assessment-item:first-of-type { border-top: 0; }
+.item-title { margin: 0; font-size: .93rem; }
+.item-detail { margin: .22rem 0 0; color: #526078; font-size: .84rem; line-height: 1.45; }
+.item-updated { display: block; margin-top: .28rem; color: #526055; font-size: .75rem; }
+.item-status-label { display: grid; gap: .3rem; color: #354158; font-size: .77rem; font-weight: 700; }
+.item-status { width: 100%; min-height: 2.55rem; padding: .45rem .6rem; border: 1px solid #cdd6cc; border-radius: .6rem; background: #fff; color: var(--brand-ink); font: inherit; font-size: .88rem; }
+.item-status:disabled { background: #f0f2ef; color: #5d6572; }
+.item-status[data-status="introduced"] { border-color: #76a8c4; }
+.item-status[data-status="developing"] { border-color: #d5a350; }
+.item-status[data-status="secure"] { border-color: #85a85a; }
+.item-status[data-status="revisit"] { border-color: #d18b8c; }
+.data-note { margin: 1rem 0 0; color: #526055; font-size: .8rem; line-height: 1.5; }
+.student-tracker__privacy,.student-tracker__empty { color: #526055; }
+@media (max-width: 600px) {
+  .progress-shell { width: min(100% - 1.1rem, 1060px); padding-top: .8rem; }
+  .assessment-item { grid-template-columns: 1fr; }
+  .item-status-label { max-width: none; }
+  .status-legend { gap: .4rem .65rem; }
+}

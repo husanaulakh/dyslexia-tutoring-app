@@ -11,6 +11,7 @@ A small, static collection of tutor-led reading practice activities. The site is
 - **Visual Drill Cards** An original front/back keyword deck with staged single-letter cards and later phonics patterns.
 - **Reading Words** Tutor-managed word lists with spaced review after three other cards.
 - **Paragraph Reading** Tutor-managed passage lists with spaced rereading after three other cards.
+- **Student Scope & Sequence** Per-student assessment tracking for Level 1, Level 2, and Level 3 concepts from the tutor-provided sequence.
 
 ## Deploy to Vercel
 
@@ -27,4 +28,4 @@ No environment variables are required.
 - Vercel responses include a restrictive Content Security Policy and standard security headers. The UFLI frame is requested only after a tutor clicks its load button.
 - `robots.txt` and the page metadata ask compliant crawlers not to index or fetch the site. `AGENTS.md` gives coding assistants repository-specific handling rules. Neither mechanism can prevent a determined scraper from copying public static pages; avoid putting private learner information here.
 
-Student profiles and recent reading-session summaries are stored locally in the browser. Data is versioned and migrates across site deployments on the same origin; it is not backed up or synchronized to other devices. Use first names or initials and avoid sensitive learner information.
+Student profiles, recent reading-session summaries, and scope-and-sequence statuses are stored locally in the browser. Data is versioned and migrates across site deployments on the same origin; it is not backed up or synchronized to other devices. Use initials or a non-identifying label and avoid sensitive learner information.
