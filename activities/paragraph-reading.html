@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8faf5">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="Tutor-managed paragraph reading lists with spaced rereading practice.">
+  <title>Paragraph Reading | Bright Steps</title>
+  <link rel="stylesheet" href="/assets/css/paragraph-reading.css">
+  <link rel="stylesheet" href="/assets/css/student-tracker.css">
+  <link rel="stylesheet" href="/assets/css/theme.css">
+</head>
+<body>
+  <main class="shell">
+    <nav class="nav" aria-label="Activity navigation"><a class="home" href="../">← Bright Steps</a></nav>
+    <header class="intro">
+      <div><div class="eyebrow">Tutor-led fluency practice</div><h1>Paragraph Reading</h1><p>Choose a lesson and read one short paragraph at a time. Each paragraph returns after three others, with a second chance sooner when a list is short.</p></div>
+      <div class="paragraph-art" aria-hidden="true"><span>Read</span><span>Pause</span><span>Tell</span></div>
+    </header>
+
+    <div class="tracker-host" id="studentTracker"></div>
+
+    <section class="panel tutor-panel" id="tutorPanel" aria-labelledby="listsHeading">
+      <div class="section-heading"><div><h2 id="listsHeading">Tutor paragraph lists</h2><p>Add or edit paragraphs for each lesson. Lists are saved in this browser.</p></div><button class="btn" type="button" id="addList">Add a list</button></div>
+      <div class="editor-grid">
+        <div class="field"><label for="listSelect">Choose a list</label><select id="listSelect"></select></div>
+        <div class="field"><label for="listName">List name</label><input id="listName" maxlength="40" autocomplete="off" value="Paragraphs 1"></div>
+      </div>
+      <div class="field"><label for="listParagraphs">Paragraphs in this list</label><textarea id="listParagraphs" rows="10" maxlength="61000" placeholder="Write one paragraph at a time. Leave a blank line between paragraphs."></textarea><p class="hint">Separate paragraphs with a blank line. Up to 30 paragraphs per list, 2,000 characters each.</p></div>
+      <div class="editor-actions"><p class="status" id="tutorStatus" role="status" aria-live="polite"></p><div><button class="btn secondary" type="button" id="saveList">Save list</button><button class="btn primary" type="button" id="startPractice">Start reading</button></div></div>
+      <p class="privacy-note">Paragraph lists stay on this device. Avoid including a learner’s name or other private information.</p>
+    </section>
+
+    <section class="panel practice-panel" id="practicePanel" aria-labelledby="practiceHeading" hidden>
+      <div class="practice-top"><button class="text-button" type="button" id="backToLists">← Tutor lists</button><span id="activeListName" class="list-badge"></span></div>
+      <h2 id="practiceHeading" class="sr-only">Read the paragraph</h2>
+      <div class="progress-row"><span id="paragraphProgressText"></span><div class="progress" role="progressbar" aria-label="Paragraph practice progress" aria-valuemin="0" aria-valuemax="1" aria-valuenow="1"><span id="progressFill"></span></div></div>
+      <article class="reading-card" aria-live="polite" aria-atomic="true"><span class="card-label" id="paragraphKind">Read this paragraph</span><p id="practiceParagraph" tabindex="-1"></p></article>
+      <div class="practice-actions"><button class="btn primary next-button" type="button" id="nextParagraph">Next paragraph</button><button class="btn secondary" type="button" id="endPractice">Back to tutor lists</button></div>
+      <p class="practice-hint" id="practiceHint">Read the paragraph aloud, then select Next paragraph. It will return after three other paragraphs for another try.</p>
+    </section>
+
+    <section class="panel done-panel" id="donePanel" aria-labelledby="doneHeading" hidden>
+      <div class="done-mark" aria-hidden="true">✓</div><div class="eyebrow">Lesson complete</div><h2 id="doneHeading">Nice reading</h2><p id="doneText"></p>
+      <div class="practice-actions"><button class="btn primary" type="button" id="repeatList">Read this list again</button><button class="btn secondary" type="button" id="doneToLists">Tutor lists</button></div>
+    </section>
+  </main>
+  <script type="module" src="/assets/js/paragraph-reading.js"></script>
+</body>
+</html>

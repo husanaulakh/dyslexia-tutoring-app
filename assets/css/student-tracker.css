@@ -1,0 +1,86 @@
+.student-tracker {
+  display: grid;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid var(--line, #d6dfd8);
+  border-radius: 1rem;
+  background: var(--surface, #fff);
+  color: var(--ink, #17372f);
+  box-shadow: 0 8px 24px rgb(23 55 47 / 7%);
+}
+
+.student-tracker__title,
+.student-tracker__history-title {
+  margin: 0;
+  color: inherit;
+}
+
+.student-tracker__title { font-size: 1.1rem; }
+.student-tracker__history-title { font-size: 0.95rem; }
+
+.student-tracker__label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.student-tracker__select,
+.student-tracker__input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line, #aebbb2);
+  border-radius: 0.65rem;
+  background: #fff;
+  color: var(--ink, #17372f);
+  font: inherit;
+}
+
+.student-tracker__select:focus-visible,
+.student-tracker__input:focus-visible,
+.student-tracker__add:focus-visible {
+  outline: 3px solid var(--accent, #285d4d);
+  outline-offset: 2px;
+}
+
+.student-tracker__form { display: grid; gap: 0.55rem; }
+
+.student-tracker__add {
+  justify-self: start;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.9rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: var(--accent, #285d4d);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.student-tracker__privacy,
+.student-tracker__status {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.student-tracker__privacy { color: var(--muted, #4a5c53); }
+.student-tracker__status { min-height: 1.1em; }
+.student-tracker__status--error { color: #a32626; }
+
+.student-tracker__history-wrap { max-height: 14rem; overflow: auto; }
+.student-tracker__history { display: grid; gap: 0.45rem; margin: 0; padding: 0; list-style: none; }
+.student-tracker__session,
+.student-tracker__empty {
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.6rem;
+  background: var(--soft, #f1f5f1);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.student-tracker__empty { color: #526055; }

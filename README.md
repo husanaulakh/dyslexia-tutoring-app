@@ -9,6 +9,8 @@ A small, static collection of tutor-led reading practice activities. The site is
 - **Trace, Copy, Cover, Close** Tutor-set word practice with animated letter tracing and oral tutor checks.
 - **UFLI Virtual Blending Board** An embedded link to the UF Literacy Institute’s externally hosted board; internet access is required.
 - **Visual Drill Cards** An original front/back keyword deck with staged single-letter cards and later phonics patterns.
+- **Reading Words** Tutor-managed word lists with spaced review after three other cards.
+- **Paragraph Reading** Tutor-managed passage lists with spaced rereading after three other cards.
 
 ## Deploy to Vercel
 
@@ -24,3 +26,5 @@ No environment variables are required.
 - GitHub Actions runs these checks on each push and pull request. To make CI a hard gate before merging, configure the repository to require the **Quality checks** status check and protect `main`; this repository is currently configured for pushes directly to `main`.
 - Vercel responses include a restrictive Content Security Policy and standard security headers. The UFLI frame is requested only after a tutor clicks its load button.
 - `robots.txt` and the page metadata ask compliant crawlers not to index or fetch the site. `AGENTS.md` gives coding assistants repository-specific handling rules. Neither mechanism can prevent a determined scraper from copying public static pages; avoid putting private learner information here.
+
+Student profiles and recent reading-session summaries are stored locally in the browser. Data is versioned and migrates across site deployments on the same origin; it is not backed up or synchronized to other devices. Use first names or initials and avoid sensitive learner information.

@@ -7,6 +7,8 @@ const activities = [
   ['/activities/trace-copy-cover-close.html', 'Trace, Copy, Cover, Close'],
   ['/activities/ufli-blending-board.html', 'UFLI Virtual Blending Board'],
   ['/activities/visual-drill-cards.html', 'Visual Drill Cards'],
+  ['/activities/reading-words.html', 'Reading Words'],
+  ['/activities/paragraph-reading.html', 'Paragraph Reading'],
 ];
 
 test('landing links to all activities and the site serves security headers', async ({ page, request }) => {
@@ -161,6 +163,68 @@ test('visual drill cards flip, filter, and navigate with keyboard', async ({ pag
   await expect(page.locator('#cardCount')).toContainText('of 5');
   await page.getByLabel('Learning stage').selectOption({ label: 'Stage 1 · SATPIN' });
   await expect(page.locator('#cardCount')).toContainText('of 2');
+});
+
+test('Reading Words supports multiple tutor lists, spaced review, and per-student history', async ({ page }) => {
+  await page.goto('/activities/reading-words.html');
+  await expect(page.getByLabel('Words in this list')).toHaveValue(/tap.*duck.*rub.*bog/s);
+  await page.getByLabel('Add a student (first name or initials)').fill('Alex');
+  await page.getByRole('button', { name: 'Add student' }).click();
+  await page.getByLabel('Add a student (first name or initials)').fill('Jamie');
+  await page.getByRole('button', { name: 'Add student' }).click();
+  await page.getByLabel('Current student').selectOption({ label: 'Alex' });
+  await page.getByRole('button', { name: 'Add a list' }).click();
+  await page.getByLabel('List name').fill('Short vowels');
+  await page.getByLabel('Words in this list').fill('cat\ndog\npig\nsun');
+  await page.getByRole('button', { name: 'Save list' }).click();
+  await page.getByLabel('Choose a list').selectOption({ label: 'List 1' });
+  await expect(page.getByLabel('Words in this list')).toHaveValue(/tap.*duck.*rub.*bog/s);
+  await page.getByLabel('Choose a list').selectOption({ label: 'Short vowels' });
+  await expect(page.getByLabel('Words in this list')).toHaveValue('cat\ndog\npig\nsun');
+  await page.getByRole('button', { name: 'Start reading' }).click();
+  await expect(page.locator('#practiceWord')).toHaveText('cat');
+  for (const word of ['dog', 'pig', 'sun', 'cat']) {
+    await page.getByRole('button', { name: 'Next word' }).click();
+    await expect(page.locator('#practiceWord')).toHaveText(word);
+  }
+  await expect(page.locator('#wordKind')).toHaveText('Read this word again');
+  await page.getByRole('button', { name: 'Back to tutor lists' }).click();
+  await expect(page.locator('#studentTracker')).toContainText('reading words: Short vowels · 4 of 8 items');
+  await page.getByLabel('Current student').selectOption({ label: 'Jamie' });
+  await expect(page.locator('#studentTracker')).toContainText('No sessions recorded yet.');
+  await page.reload();
+  await page.getByLabel('Current student').selectOption({ label: 'Alex' });
+  await expect(page.locator('#studentTracker')).toContainText('reading words: Short vowels · 4 of 8 items');
+  await page.getByLabel('Choose a list').selectOption({ label: 'Short vowels' });
+  await expect(page.getByLabel('Words in this list')).toHaveValue('cat\ndog\npig\nsun');
+});
+
+test('Paragraph Reading supports tutor lists, spaced review, and saved student sessions', async ({ page }) => {
+  await page.goto('/activities/paragraph-reading.html');
+  await page.getByLabel('Add a student (first name or initials)').fill('Riley');
+  await page.getByRole('button', { name: 'Add student' }).click();
+  await page.getByRole('button', { name: 'Add a list' }).click();
+  await page.getByLabel('List name').fill('Short passages');
+  await page.getByLabel('Paragraphs in this list').fill('First passage.\n\nSecond passage.\n\nThird passage.\n\nFourth passage.\n\nFifth passage.');
+  await page.getByRole('button', { name: 'Save list' }).click();
+  await page.getByLabel('Choose a list').selectOption({ label: 'Paragraphs 1' });
+  await expect(page.getByLabel('Paragraphs in this list')).toHaveValue(/Sam has a red cap/);
+  await page.getByLabel('Choose a list').selectOption({ label: 'Short passages' });
+  await expect(page.getByLabel('Paragraphs in this list')).toHaveValue(/First passage.*Fifth passage/s);
+  await page.getByRole('button', { name: 'Start reading' }).click();
+  await expect(page.locator('#practiceParagraph')).toHaveText('First passage.');
+  for (const paragraph of ['Second passage.', 'Third passage.', 'Fourth passage.', 'First passage.']) {
+    await page.getByRole('button', { name: 'Next paragraph' }).click();
+    await expect(page.locator('#practiceParagraph')).toHaveText(paragraph);
+  }
+  await expect(page.locator('#paragraphKind')).toHaveText('Review · Paragraph 1');
+  await page.getByRole('button', { name: 'Back to tutor lists' }).click();
+  await expect(page.locator('#studentTracker')).toContainText('paragraph reading: Short passages · 4 of 10 items');
+  await page.reload();
+  await expect(page.locator('#studentTracker')).toContainText('Riley');
+  await expect(page.locator('#studentTracker')).toContainText('paragraph reading: Short passages · 4 of 10 items');
+  await page.getByLabel('Choose a list').selectOption({ label: 'Short passages' });
+  await expect(page.getByLabel('Paragraphs in this list')).toHaveValue(/First passage.*Fifth passage/s);
 });
 
 test('UFLI third-party frame makes no request until the tutor chooses to load it', async ({ page }) => {
