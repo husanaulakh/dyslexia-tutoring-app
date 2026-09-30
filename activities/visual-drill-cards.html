@@ -9,15 +9,51 @@
   <link rel="stylesheet" href="../assets/css/visual-drill-cards.css">
   <link rel="stylesheet" href="/assets/css/theme.css">
   <link rel="stylesheet" href="/assets/css/activity-tools.css">
+  <link rel="stylesheet" href="/assets/css/student-tracker.css">
 </head>
 <body>
   <main class="shell">
     <a class="home" href="../">← Bright Steps</a>
-    <header class="header"><div><div class="eyebrow">Tutor-led phonics review</div><h1>Visual Drill Cards</h1><p>Show the grapheme. Flip to reveal a keyword picture and its sound.</p></div></header>
-    <section class="tools" aria-label="Choose a card set"><div class="filters"><div class="field"><label for="stageFilter">Learning stage</label><select id="stageFilter"></select></div><div class="field"><label for="groupFilter">Card type</label><select id="groupFilter"></select></div></div><div class="count" id="cardCount" aria-live="polite"></div></section>
-    <section class="stage" id="stage" aria-label="Flashcard"></section>
-    <div class="actions"><button class="action" id="shuffleBtn" type="button">Shuffle set</button><button class="action primary" id="flipBtn" type="button">Show keyword</button></div>
-    <p class="key-hint">Click the card or press Space to flip · use ← and → to move between cards.</p>
+    <header class="header"><div><div class="eyebrow">Tutor-led phonics review</div><h1>Visual Drill Cards</h1><p>Choose a focused set, show the grapheme, then reveal its keyword and sound.</p></div></header>
+    <section id="studentTracker" data-tutor-tools aria-label="Learner and practice history"></section>
+
+    <section class="panel tutor-tools" data-tutor-tools aria-labelledby="selectionHeading">
+      <h2 id="selectionHeading">Choose recall cards</h2>
+      <p class="selection-help" id="selectionHelp">Select cards for tutor-marked recall practice. Browsing the deck remains available without starting a scored practice.</p>
+      <div class="tools" aria-label="Choose a card set">
+        <div class="filters">
+          <div class="field"><label for="stageFilter">Learning stage</label><select id="stageFilter"></select></div>
+          <div class="field"><label for="groupFilter">Card type</label><select id="groupFilter"></select></div>
+        </div>
+        <div class="count" id="cardCount" aria-live="polite"></div>
+      </div>
+      <div class="selection-actions"><button class="action" id="selectVisibleBtn" type="button">Select visible cards</button><button class="action" id="clearSelectionBtn" type="button">Clear selection</button></div>
+      <fieldset class="card-picker"><legend>Cards in this set</legend><div id="cardChoices" class="card-choices"></div></fieldset>
+      <p class="status" id="tutorStatus" role="status" aria-live="polite"></p>
+      <button class="action primary" id="startRecallBtn" type="button">Start recall practice</button>
+    </section>
+
+    <section class="browse-tools" data-tutor-tools aria-label="Browse cards">
+      <h2>Browse the deck</h2>
+      <div class="stage" id="stage" aria-label="Flashcard"></div>
+      <div class="actions"><button class="action" id="shuffleBtn" type="button">Shuffle visible set</button><button class="action primary" id="flipBtn" type="button">Show keyword</button></div>
+      <p class="key-hint">Click the card or press Space to flip · use ← and → to move between cards.</p>
+    </section>
+
+    <section class="practice" id="recallPanel" aria-labelledby="recallHeading" hidden>
+      <div class="practice-header"><div><div class="eyebrow">Tutor-marked recall</div><h2 id="recallHeading">Recall practice</h2><p id="recallProgress" aria-live="polite"></p></div><button class="action" id="endRecallBtn" data-tutor-tools type="button">Save and end</button></div>
+      <div class="stage practice-stage" id="recallStage" aria-label="Recall practice flashcard"></div>
+      <div class="actions"><button class="action" id="revealRecallBtn" type="button">Show keyword</button></div>
+      <fieldset class="outcomes" data-tutor-tools id="recallOutcomes" disabled><legend id="outcomeLegend">Tutor-marked recall outcome · reveal first</legend><div class="outcome-buttons"><button class="action outcome" type="button" data-outcome="independent">Independent</button><button class="action outcome" type="button" data-outcome="supported">With help</button><button class="action outcome" type="button" data-outcome="revisit">Revisit</button></div></fieldset>
+      <div class="actions practice-navigation"><button class="action" id="previousRecallBtn" type="button">Previous card</button><button class="action primary" id="nextRecallBtn" type="button">Next card</button></div>
+      <p class="key-hint" id="recallHint">Say the sound aloud. Reveal the keyword before recording a tutor-confirmed outcome.</p>
+    </section>
+
+    <section class="done panel" id="donePanel" aria-labelledby="doneHeading" hidden>
+      <div class="eyebrow">Recall practice complete</div><h2 id="doneHeading">Practice saved</h2><p id="doneText"></p>
+      <button class="action primary" id="returnToDeckBtn" type="button">Return to deck</button>
+    </section>
+
     <aside class="source-note">An original digital keyword-card collection with common, tutor-friendly examples. Its early sequence follows the public SATPIN → MDGOCK → EURF → HBJVLW progression described by <a href="https://www.nurturingdyslexics.com/orton-gillingham-printable" target="_blank" rel="noopener noreferrer">Nurturing Dyslexics</a>. This site is independent and is not affiliated with or endorsed by that resource.</aside>
   </main>
   <script type="module" src="../assets/js/visual-drill-cards.js"></script>

@@ -95,8 +95,8 @@ function buildConceptPicker() {
 function presetsFor(activityId) {
   if (activityId === 'visual-drill-cards') return visualDrillGroups.map(group => [group.id, group.label]);
   const map = {
-    'sound-boxes': [['phoneme-mapping', 'Phoneme mapping'], ['custom', 'Tutor word list']],
-    'auditory-dictation': [['sounds-and-words', 'Sounds and words'], ['custom', 'Tutor dictation list']],
+    'sound-boxes': [['phoneme-mapping', 'Annotated starter words']],
+    'auditory-dictation': [['all', 'Sounds and words'], ['sounds', 'Sounds only'], ['words', 'Words only']],
     'word-workshop': workshopStrands.map(strand => [strand.id, strand.label]),
   };
   return map[activityId] ?? [['', 'Use activity default']];
@@ -106,7 +106,7 @@ function populatePresets() {
   const activity = getActivity(activitySelect.value);
   presetSelect.replaceChildren();
   for (const [value, label] of presetsFor(activitySelect.value)) addOption(presetSelect, value, label);
-  presetField.hidden = !['sound-boxes', 'auditory-dictation', 'word-workshop'].includes(activitySelect.value);
+  presetField.hidden = !['sound-boxes', 'auditory-dictation', 'word-workshop', 'visual-drill-cards'].includes(activitySelect.value);
   const modes = activity?.supportedModes ?? ['screen'];
   responseMode.replaceChildren();
   for (const mode of modes) addOption(responseMode, mode, mode === 'paper' ? 'Paper or tutor response' : 'On screen');
@@ -146,7 +146,7 @@ function selectedItemCatalog(activityId) {
     return cards.map(card => ({ id: card.id, label: `${card.grapheme} · ${card.keyword}` }));
   }
   if (activityId === 'sound-boxes') return soundBoxWords.map(word => ({ id: word.id, label: `${word.word} · ${word.phonemes.length} sounds` }));
-  if (activityId === 'auditory-dictation') return auditoryDictationItems.map(item => ({ id: item.id, label: `${item.kind === 'word' ? 'Word' : 'Sound'} · ${item.prompt}` }));
+  if (activityId === 'auditory-dictation') return auditoryDictationItems.filter(item => presetSelect.value === 'sounds' ? item.kind === 'sound' : presetSelect.value === 'words' ? item.kind === 'word' : true).map(item => ({ id: item.id, label: `${item.kind === 'word' ? 'Word' : 'Sound'} · ${item.prompt}` }));
   if (activityId === 'word-workshop') {
     const data = { 'silent-e': silentEItems, sort: sortItems, syllables: syllableItems, vccv: vcCvItems }[presetSelect.value] ?? [];
     return data.map(item => ({ id: item.id, label: item.word }));
@@ -196,6 +196,7 @@ function moveItem(index, offset) {
   renderSteps();
   const moved = stepList.querySelector(`[data-step-id="${CSS.escape(steps[next].id)}"]`);
   moved?.focus();
+  setStatus(`${getActivity(steps[next].activityId).label} moved to step ${next + 1}.`);
 }
 
 function renderSteps() {
@@ -205,6 +206,7 @@ function renderSteps() {
     const activity = getActivity(step.activityId);
     const item = make('li', 'lesson-step');
     item.dataset.stepId = step.id;
+    item.tabIndex = -1;
     const row = make('div', 'step-row');
     const info = make('div', 'step-info');
     const title = make('span', 'step-title', `${index + 1}. ${activity?.label ?? 'Practice activity'}`);

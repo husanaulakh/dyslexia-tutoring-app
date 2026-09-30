@@ -161,7 +161,7 @@ test('visual drill cards flip, filter, and navigate with keyboard', async ({ pag
   await expect(page.locator('.keyword')).toHaveText('sun');
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('.grapheme')).toHaveText('a');
-  await page.getByRole('button', { name: /Flip to reveal apple/ }).click();
+  await page.getByRole('button', { name: /Flip to reveal keyword and sound for a/ }).click();
   await expect(page.locator('.sound')).toHaveText('/ă/');
   await page.getByLabel('Card type').selectOption('vowels');
   await expect(page.locator('.grapheme')).toHaveText('a');
