@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const paths = ['lesson-builder', 'sound-boxes', 'auditory-dictation', 'word-workshop', 'reading-words', 'paragraph-reading', 'blending-board', 'trace-copy-cover-close', 'visual-drill-cards', 'whats-missing-cards', 'student-progress', 'ufli-blending-board'];
+const paths = ['tutor-suggestions', 'lesson-builder', 'sound-boxes', 'auditory-dictation', 'word-workshop', 'reading-words', 'paragraph-reading', 'blending-board', 'trace-copy-cover-close', 'visual-drill-cards', 'whats-missing-cards', 'student-progress', 'ufli-blending-board'];
 
 test('presentation settings change actual reading text, persist valid settings, and hide tutor editors', async ({ page }) => {
   await page.goto('/activities/word-workshop.html');
@@ -25,6 +25,7 @@ test('presentation settings change actual reading text, persist valid settings, 
   await expect(page.locator('#studentTracker')).toBeHidden();
   await expect(page.locator('#revealAnswer')).toBeHidden();
   await expect(word).toBeVisible();
+  await expect(page.getByRole('button', { name: 'End practice', exact: true })).toBeHidden();
   await page.getByRole('button', { name: 'Show tutor tools' }).click();
   await expect(page.locator('#revealAnswer')).toBeVisible();
   await page.reload();
@@ -82,4 +83,23 @@ test('hostile saved settings fall back safely and blocked storage preserves usab
   await page.getByRole('button', { name: 'Show learner view' }).click();
   await expect(page.locator('#tutorPanel')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Show tutor tools' })).toBeVisible();
+});
+
+
+test('learner view keeps list exits hidden while reading and restores tutor navigation explicitly', async ({ page }) => {
+  await page.goto('/activities/reading-words.html');
+  await page.getByLabel('Learner label (initials or code)').fill('L01');
+  await page.getByRole('button', { name: 'Add student' }).click();
+  for (const activity of ['reading-words', 'paragraph-reading']) {
+    await page.goto(`/activities/${activity}.html`);
+    await page.getByRole('button', { name: 'Start reading' }).click();
+    await expect(page.locator('#backToLists')).toBeVisible();
+    await page.getByRole('button', { name: 'Show learner view' }).click();
+    await expect(page.locator('#backToLists')).toBeHidden();
+    await expect(page.locator('#endPractice')).toBeHidden();
+    await expect(page.locator('#practicePanel')).toBeVisible();
+    await page.getByRole('button', { name: 'Show tutor tools' }).click();
+    await page.locator('#backToLists').click();
+    await expect(page.locator('#tutorPanel')).toBeVisible();
+  }
 });

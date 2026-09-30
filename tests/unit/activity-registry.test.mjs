@@ -22,3 +22,14 @@ test('lookup helpers are safe and available activities follow descriptor availab
   assert.ok(getActivitiesForConcept('l1-vccv').some(item => item.id === 'word-workshop'));
   assert.deepEqual(getActivitiesForConcept('<script>'), []);
 });
+
+
+test('tutor guidance is mapped but cannot become a lesson practice step', () => {
+  const guidance = getActivity('tutor-suggestions');
+  assert.equal(guidance.kind, 'guidance');
+  assert.equal(guidance.available, true);
+  assert.ok(guidance.conceptIds.includes('l1-vccv'));
+  assert.ok(!PRACTICE_ACTIVITIES.includes(guidance));
+  assert.ok(!AVAILABLE_PRACTICE_ACTIVITIES.includes(guidance));
+  assert.ok(getActivitiesForConcept('l1-consonants').some(item => item.id === 'whats-missing-cards'));
+});

@@ -110,3 +110,20 @@ test('Word Workshop has no horizontal overflow at a narrow screen width', async 
   const dimensions = await page.evaluate(() => ({ width: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
   expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.width);
 });
+
+
+test('an invalid lesson item selection reports an error without substituting other words', async ({ page }) => {
+  await page.goto('/activities/word-workshop.html');
+  await addLearner(page);
+  await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('bright-steps-student-progress'));
+    sessionStorage.setItem('bright-steps-active-lesson', JSON.stringify({
+      version: 1, studentId: data.students[0].id, index: 0, completedStepIds: [], startedAt: new Date().toISOString(),
+      template: { id: 'invalid-selection', name: 'Review', conceptIds: [], steps: [{ id: 'workshop-step', activityId: 'word-workshop', responseMode: 'paper', settings: { workshop: 'vccv', itemIds: ['unknown-item'] } }] },
+    }));
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Start practice' }).click();
+  await expect(page.locator('#setupStatus')).toContainText('No items are available');
+  await expect(page.locator('#practicePanel')).toBeHidden();
+});

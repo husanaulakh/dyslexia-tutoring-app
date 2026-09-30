@@ -62,7 +62,7 @@ function beginPractice() {
   if (Array.isArray(selectedIds) && selectedIds.length) {
     const selected = new Set(selectedIds);
     const filtered = items.filter(item => selected.has(item.id));
-    if (filtered.length) items = filtered;
+    items = filtered;
   }
   if (!items.length) { setSetupStatus('No items are available in this workshop yet.', true); return; }
   state = {
@@ -89,7 +89,7 @@ function taskCopy() {
 function answerText(item) {
   if (state.strand === 'silent-e') return `Add silent e: ${item.word} → ${item.answer}. ${item.note}`;
   if (state.strand === 'sort') return `Sort ${item.word} under: ${getSortCategory(item.pattern)?.label ?? 'Tutor key unavailable'}.`;
-  if (state.strand === 'syllables') return `${item.word} is a ${getSyllableType(item.pattern)?.label ?? 'tutor-marked'} syllable type. ${getSyllableType(item.pattern)?.description ?? ''}`;
+  if (state.strand === 'syllables') return `The marked syllable ${item.focus} in ${item.word} is ${getSyllableType(item.pattern)?.label ?? 'tutor-marked'}. ${getSyllableType(item.pattern)?.description ?? ''}`;
   return `Tutor-marked split: ${item.pattern.replace('/', ' / ')}. ${item.note ?? ''}`;
 }
 

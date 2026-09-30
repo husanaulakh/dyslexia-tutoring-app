@@ -53,7 +53,7 @@ if (fixedHost) fixedHost.append(host); else main?.prepend(host);
 function apply() {
   document.documentElement.style.setProperty('--reading-scale', preferences.size / 100);
   document.documentElement.style.setProperty('--reading-spacing', preferences.spacing);
-  const tutorTargets = '#tutorPanel, #newWord, .lesson-shell .panel, .lesson-actions, #app .setup-grid > .panel:first-child, .item-status-label';
+  const tutorTargets = '#tutorPanel, #newWord, #backToLists, #doneToLists, #endPractice, #again, #returnToDeckBtn, .lesson-shell .panel, .lesson-actions, #app .setup-grid > .panel:first-child, .item-status-label';
   for (const node of document.querySelectorAll(tutorTargets)) node.setAttribute('data-tutor-tools', '');
   const readingTargets = '[data-reading-content], #practiceWord, #practiceParagraph, #practiceQuestion, #itemWord, #focusSyllable, #targetWord:not(input), #answerSpellings, .grapheme, .keyword, .sound, .tile.exercise, .tile.review, .word-example, .word-banner strong, .oral-prompt, #stage .card, #promptText';
   for (const node of document.querySelectorAll(readingTargets)) {

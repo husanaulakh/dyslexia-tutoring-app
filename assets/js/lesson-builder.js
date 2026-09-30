@@ -174,7 +174,7 @@ function currentSettings() {
   const activityId = activitySelect.value;
   const settings = {};
   if (activityId === 'word-workshop') settings.workshop = presetSelect.value;
-  if (activityId === 'sound-boxes' || activityId === 'auditory-dictation') settings.preset = presetSelect.value;
+  if (['sound-boxes', 'auditory-dictation', 'visual-drill-cards'].includes(activityId)) settings.preset = presetSelect.value;
   const listId = wordListSelect.value;
   if (listId) settings.listId = listId;
   const catalog = selectedItemCatalog(activityId);

@@ -43,8 +43,11 @@ test('tutor can select a subset and mark each card once after the keyword is rev
   await expect(page.locator('#recallStage .face.back')).toHaveAttribute('aria-hidden', 'true');
   await page.getByRole('button', { name: 'Show keyword' }).click();
   await expect(page.locator('#recallStage .keyword')).toHaveText('sun');
+  await expect(page.getByRole('button', { name: /Flip back to s\. Keyword sun; sound \/s\// })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Independent' })).toBeEnabled();
-  await page.getByRole('button', { name: 'With help' }).click();
+  await page.getByRole('button', { name: 'With help' }).focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('#outcomeLegend')).toContainText('With help');
   await page.getByRole('button', { name: 'Next card' }).click();
   await page.getByRole('button', { name: 'Show keyword' }).click();
   await page.getByRole('button', { name: 'Independent' }).click();
@@ -103,6 +106,7 @@ test('visual drill fits a narrow viewport and remains operable with keyboard', a
   await page.getByRole('button', { name: /Flip to reveal keyword and sound for s/ }).focus();
   await page.keyboard.press('Space');
   await expect(page.locator('#stage .keyword')).toHaveText('sun');
+  await page.getByRole('button', { name: /Flip back to s/ }).focus();
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('.grapheme')).toHaveText('a');
 });

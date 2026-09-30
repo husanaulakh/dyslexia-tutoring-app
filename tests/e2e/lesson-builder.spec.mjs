@@ -87,3 +87,24 @@ test('Lesson Builder reports failed local template writes', async ({ page }) => 
   await page.getByRole('button', { name: 'Save template' }).click();
   await expect(page.locator('#builderStatus')).toContainText('Browser storage is unavailable');
 });
+
+
+test('a whole visual preset survives template save and starts only that recall set', async ({ page }) => {
+  await page.goto('/activities/lesson-builder.html');
+  await page.getByLabel('Learner label (initials or code)').fill('L-01');
+  await page.getByRole('button', { name: 'Add student' }).click();
+  await page.getByLabel('Template name').fill('Vowel review');
+  await page.getByLabel('Practice activity').selectOption('visual-drill-cards');
+  await page.getByLabel('Activity preset').selectOption('vowels');
+  await page.getByRole('button', { name: 'Add step' }).click();
+  await page.getByRole('button', { name: 'Save template' }).click();
+  const templates = await page.evaluate(() => JSON.parse(localStorage.getItem('bright-steps-lesson-templates')));
+  expect(templates[0].steps[0].settings).toMatchObject({ preset: 'vowels' });
+  await page.getByRole('button', { name: 'Start lesson' }).click();
+  await expect(page.getByLabel('Card type')).toHaveValue('vowels');
+  await expect(page.locator('.card-choice input:checked')).toHaveCount(5);
+  await expect(page.locator('#stage .grapheme')).toHaveText('a');
+  await page.getByRole('button', { name: 'Start recall practice' }).click();
+  await expect(page.locator('#recallProgress')).toHaveText('Card 1 of 5');
+  await expect(page.locator('#recallStage button')).toHaveAccessibleName('Flip to reveal keyword and sound for a.');
+});

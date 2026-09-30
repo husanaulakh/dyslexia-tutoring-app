@@ -107,7 +107,9 @@ function renderFlashcard(host, card, flipped, { recalled = false } = {}) {
   button.type = 'button';
   button.id = host === stage ? 'flashCard' : 'recallCard';
   button.setAttribute('aria-pressed', String(flipped));
-  button.setAttribute('aria-label', flipped ? `Flip back to ${card.grapheme}` : `Flip to reveal keyword and sound for ${card.grapheme}`);
+  button.setAttribute('aria-label', flipped
+    ? `Flip back to ${card.grapheme}. Keyword ${card.keyword}; sound ${card.sound}.`
+    : `Flip to reveal keyword and sound for ${card.grapheme}.`);
   const front = make('span', 'face front');
   front.setAttribute('aria-hidden', String(flipped));
   const frontTitle = make('span', 'face-label', 'Front · grapheme');
@@ -300,7 +302,12 @@ $('#returnToDeckBtn').addEventListener('click', () => {
 });
 document.querySelectorAll('.outcome').forEach(button => button.addEventListener('click', () => selectOutcome(button.dataset.outcome)));
 window.addEventListener('keydown', event => {
-  if (event.altKey || event.ctrlKey || event.metaKey || /^(INPUT|SELECT|TEXTAREA)$/.test(event.target.tagName)) return;
+  const target = event.target;
+  const interactive = typeof target?.closest === 'function'
+    && target.closest('button, a, input, select, textarea, [contenteditable=""], [contenteditable="true"], [role="button"], [role="link"]');
+  if (event.altKey || event.ctrlKey || event.metaKey || !target || target.isContentEditable) return;
+  if (interactive && (!interactive.matches('.flash-card') || event.code === 'Space')) return;
+  if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') event.preventDefault();
   if (!practice.active) {
     if (event.code === 'Space') { event.preventDefault(); flipBrowse(); }
     if (event.key === 'ArrowRight') moveBrowse(1);
@@ -313,3 +320,8 @@ window.addEventListener('keydown', event => {
 });
 
 updateVisibleCards();
+
+if (context) {
+  const firstSelected = visibleCards.findIndex(card => selectedIds.has(card.id));
+  if (firstSelected >= 0) { currentIndex = firstSelected; renderBrowseCard(); }
+}
