@@ -29,6 +29,8 @@
         <div class="field"><label for="listName">List name</label><input id="listName" maxlength="40" autocomplete="off" value="Paragraphs 1"></div>
       </div>
       <div class="field"><label for="listParagraphs">Paragraphs in this list</label><textarea id="listParagraphs" rows="10" maxlength="61000" placeholder="Write one paragraph at a time. Leave a blank line between paragraphs."></textarea><p class="hint">Separate paragraphs with a blank line. Up to 30 paragraphs per list, 2,000 characters each.</p></div>
+      <div class="field"><label for="listQuestions">Optional oral comprehension prompts</label><textarea id="listQuestions" rows="5" maxlength="15030" placeholder="One tutor-spoken prompt per paragraph, in the same order. Leave a line blank when no prompt is needed."></textarea><p class="hint">One line for each paragraph. For example: What happened first? What detail tells you where Sam is?</p></div>
+      <div class="editor-grid feedback-settings"><div class="field"><label for="questionMode">Comprehension prompts</label><select id="questionMode"><option value="oral">Show tutor prompts when present</option><option value="none">Hide prompts</option></select></div><div class="field"><label for="rereadMode">Reread selection</label><select id="rereadMode"><option value="all">Reread all paragraphs</option><option value="needs-practice">Reread needs-practice only</option></select></div></div>
       <div class="editor-actions"><p class="status" id="tutorStatus" role="status" aria-live="polite"></p><div><button class="btn secondary" type="button" id="saveList">Save list</button><button class="btn primary" type="button" id="startPractice">Start reading</button></div></div>
       <p class="privacy-note">Paragraph lists stay on this device. Avoid including a learner’s name or other private information.</p>
     </section>
@@ -37,9 +39,10 @@
       <div class="practice-top"><button class="text-button" type="button" id="backToLists">← Tutor lists</button><span id="activeListName" class="list-badge"></span></div>
       <h2 id="practiceHeading" class="sr-only">Read the paragraph</h2>
       <div class="progress-row"><span id="paragraphProgressText"></span><div class="progress" role="progressbar" aria-label="Paragraph practice progress" aria-valuemin="0" aria-valuemax="1" aria-valuenow="1"><span id="progressFill"></span></div></div>
-      <article class="reading-card" aria-live="polite" aria-atomic="true"><span class="card-label" id="paragraphKind">Read this paragraph</span><p id="practiceParagraph" tabindex="-1"></p></article>
-      <div class="practice-actions"><button class="btn primary next-button" type="button" id="nextParagraph">Next paragraph</button><button class="btn secondary" type="button" id="endPractice">Back to tutor lists</button></div>
-      <p class="practice-hint" id="practiceHint">Read the paragraph aloud, then select Next paragraph. It will return after three other paragraphs for another try.</p>
+      <article class="reading-card" aria-live="polite" aria-atomic="true"><span class="card-label" id="paragraphKind">Read this paragraph</span><p id="practiceParagraph" tabindex="-1"></p><div id="comprehensionPrompt" class="comprehension-prompt" hidden><span>Tutor: ask aloud</span><p id="practiceQuestion"></p></div></article>
+      <fieldset class="outcomes" aria-label="Tutor-confirmed paragraph reading outcome"><legend id="paragraphOutcomeHeading">Tutor-confirmed outcome</legend><div class="outcome-buttons"><button class="btn outcome" type="button" data-outcome="independent" aria-pressed="false">Independent</button><button class="btn outcome" type="button" data-outcome="supported" aria-pressed="false">With help</button><button class="btn outcome" type="button" data-outcome="revisit" aria-pressed="false">Revisit</button></div></fieldset>
+      <div class="practice-actions"><button class="btn primary next-button" type="button" id="nextParagraph" disabled>Finish paragraph</button><button class="btn secondary" type="button" id="endPractice">Back to tutor lists</button></div>
+      <p class="practice-hint" id="practiceHint">Read aloud and record the first response. Choose whether all paragraphs or only those needing practice return for rereading.</p>
     </section>
 
     <section class="panel done-panel" id="donePanel" aria-labelledby="doneHeading" hidden>

@@ -38,7 +38,7 @@
       <h2 id="practiceHeading" class="sr-only">Read the word</h2>
       <div class="progress-row"><span id="wordProgressText"></span><div class="progress" role="progressbar" aria-label="Word practice progress" aria-valuemin="0" aria-valuemax="20" aria-valuenow="1"><span id="progressFill"></span></div></div>
       <div class="word-card"><span class="card-label" id="wordKind">Read this word</span><strong id="practiceWord" tabindex="-1"></strong></div>
-      <div class="practice-actions answer-actions"><button class="btn primary" type="button" id="correctWord">Got it right</button><button class="btn needs-review" type="button" id="incorrectWord">Got it wrong</button></div>
+      <fieldset class="outcomes" aria-label="Tutor-confirmed reading outcome"><legend id="outcomeHeading">Tutor-confirmed outcome</legend><div class="outcome-buttons"><button class="btn primary outcome" type="button" id="correctWord" data-outcome="independent" aria-pressed="false">Independent</button><button class="btn outcome" type="button" id="supportedWord" data-outcome="supported" aria-pressed="false">With help</button><button class="btn needs-review outcome" type="button" id="incorrectWord" data-outcome="revisit" aria-pressed="false">Revisit</button></div></fieldset>
       <div class="practice-actions"><button class="btn secondary" type="button" id="endPractice">Back to tutor lists</button></div>
       <p class="practice-hint" id="practiceHint" aria-live="polite">Read the word aloud, then tell the tutor whether it was correct.</p>
     </section>

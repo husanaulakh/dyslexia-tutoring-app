@@ -1,10 +1,15 @@
 import { mountStudentTracker } from './student-tracker.js';
-import { advanceReviewQueue, buildReviewQueue, normalizeWordLists, parseReadingWords } from './reading-words-logic.mjs';
+import { getLessonActivityContext } from './lesson-context.mjs';
+import {
+  advanceReviewQueue, buildReviewQueue, createReadingOutcomeCounts,
+  normalizeReadingOutcome, normalizeWordLists, parseReadingWords, recordReadingOutcome,
+} from './reading-words-logic.mjs';
 
 const STORAGE_KEY = 'bright-steps-reading-word-lists';
 const STARTER_WORDS = ['tap', 'duck', 'rub', 'bog', 'net', 'bell', 'tall', 'van', 'pits', 'chap'];
 const $ = selector => document.querySelector(selector);
 const tracker = mountStudentTracker($('#studentTracker'), { activityLabel: 'Reading Words' });
+const lessonContext = getLessonActivityContext('reading-words');
 const elements = {
   tutor: $('#tutorPanel'), practice: $('#practicePanel'), done: $('#donePanel'),
   select: $('#listSelect'), name: $('#listName'), words: $('#listWords'), status: $('#tutorStatus'),
@@ -21,8 +26,17 @@ function loadLists() {
   }
 }
 
-const state = { lists: loadLists(), selectedId: '', queue: [], total: 0, shown: 0, completed: 0, reviewsScheduled: 0, activeName: '', studentId: '', startedAt: 0, sessionSaved: false };
+const state = {
+  lists: loadLists(), selectedId: '', queue: [], total: 0, shown: 0, completed: 0, reviewsScheduled: 0,
+  activeName: '', studentId: '', startedAt: 0, sessionSaved: false,
+  outcomeCounts: createReadingOutcomeCounts(), retryOutcomeCounts: createReadingOutcomeCounts(), selectedOutcome: '',
+};
 state.selectedId = state.lists[0].id;
+
+if (lessonContext?.settings?.listId && state.lists.some(list => list.id === lessonContext.settings.listId)) {
+  state.selectedId = lessonContext.settings.listId;
+  elements.select.disabled = true;
+}
 
 function selectedList() { return state.lists.find(list => list.id === state.selectedId) ?? state.lists[0]; }
 function saveStorage() {
@@ -75,6 +89,8 @@ function beginPractice() {
   state.studentId = student.id;
   state.startedAt = Date.now();
   state.sessionSaved = false;
+  state.outcomeCounts = createReadingOutcomeCounts();
+  state.retryOutcomeCounts = createReadingOutcomeCounts();
   $('#studentTracker').hidden = true;
   elements.tutor.hidden = true;
   elements.done.hidden = true;
@@ -90,19 +106,25 @@ function renderWord() {
   elements.progressBar.setAttribute('aria-valuenow', String(state.shown));
   elements.progressFill.style.width = `${Math.round((state.shown / state.total) * 100)}%`;
   elements.kind.textContent = current.isReview ? 'Read this word again' : 'Read this word';
+  $('#outcomeHeading').textContent = current.isReview ? 'Tutor-confirmed retry outcome' : 'Tutor-confirmed first response';
+  document.querySelectorAll('[data-outcome]').forEach(button => button.setAttribute('aria-pressed', 'false'));
   elements.word.textContent = current.word;
   elements.word.classList.toggle('review-word', current.isReview);
   elements.hint.textContent = current.isReview
-    ? 'This word was missed earlier. Read it aloud again.'
-    : 'Read the word aloud. Choose “Got it wrong” to bring this word back after three others.';
+    ? 'This word needed practice earlier. Read it aloud again; this retry will be recorded separately.'
+    : 'Read the word aloud. Independent ends its turn; With help or Revisit brings it back once after up to three other words.';
   elements.word.focus({ preventScroll: true });
 }
-function markWord(wasCorrect) {
+function markWord(outcomeValue) {
   if (!state.queue.length) return;
+  const outcome = normalizeReadingOutcome(outcomeValue);
+  if (!outcome) return;
   const current = state.queue[0];
-  state.queue = advanceReviewQueue(state.queue, wasCorrect);
+  if (current.isReview) state.retryOutcomeCounts = recordReadingOutcome(state.retryOutcomeCounts, outcome);
+  else state.outcomeCounts = recordReadingOutcome(state.outcomeCounts, outcome);
+  state.queue = advanceReviewQueue(state.queue, outcome);
   state.completed += 1;
-  if (!wasCorrect && !current.isReview) {
+  if (outcome !== 'independent' && !current.isReview) {
     state.total += 1;
     state.reviewsScheduled += 1;
   }
@@ -111,31 +133,43 @@ function markWord(wasCorrect) {
   renderWord();
 }
 function saveSession() {
-  if (state.sessionSaved || !state.studentId || state.completed < 1) return;
-  const result = tracker.recordSession({
-    studentId: state.studentId, activity: 'Reading Words', listLabel: state.activeName,
-    completedItems: state.completed, totalItems: state.total,
-    durationSeconds: Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)),
-  });
-  state.sessionSaved = Boolean(result.ok);
+  if (state.sessionSaved) return true;
+  if (!state.studentId || state.completed < 1) return false;
+  try {
+    const result = tracker.recordSession({
+      studentId: state.studentId, activity: 'reading-words', conceptIds: lessonContext?.conceptIds ?? [], listLabel: state.activeName,
+      completedItems: state.completed, totalItems: state.total,
+      outcomeCounts: state.outcomeCounts, retryOutcomeCounts: state.retryOutcomeCounts,
+      durationSeconds: Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)),
+    });
+    state.sessionSaved = Boolean(result?.ok);
+  } catch {
+    state.sessionSaved = false;
+  }
+  return state.sessionSaved;
 }
 function completePractice() {
-  saveSession();
+  const saved = saveSession();
   $('#studentTracker').hidden = false;
   elements.practice.hidden = true;
   elements.done.hidden = false;
   const reviewText = state.reviewsScheduled
-    ? `${state.reviewsScheduled} missed ${state.reviewsScheduled === 1 ? 'word was' : 'words were'} reviewed once after three others.`
-    : 'All words were marked correct, so no review cards were added.';
-  $('#doneText').textContent = `You practised ${state.completed} word cards from ${state.activeName}. ${reviewText}`;
+    ? `${state.reviewsScheduled} ${state.reviewsScheduled === 1 ? 'word was' : 'words were'} reviewed once after three others.`
+    : 'No words needed a retry.';
+  const initial = state.outcomeCounts;
+  const retries = state.retryOutcomeCounts;
+  const retryText = Object.values(retries).some(Boolean)
+    ? ` Retry outcomes: ${retries.independent} independent, ${retries.supported} with help, ${retries.revisit} revisit.`
+    : '';
+  $('#doneText').textContent = `You practised ${state.completed} word cards from ${state.activeName}. First responses: ${initial.independent} independent, ${initial.supported} with help, ${initial.revisit} revisit. ${reviewText}${retryText}${state.completed > 0 && !saved ? ' The session could not be saved in browser storage.' : ''}`;
 }
 function backToLists() {
-  saveSession();
+  const saved = saveSession();
   $('#studentTracker').hidden = false;
   elements.practice.hidden = true;
   elements.done.hidden = true;
   elements.tutor.hidden = false;
-  elements.status.textContent = '';
+  elements.status.textContent = state.completed > 0 && !saved ? 'The completed practice could not be saved in browser storage.' : '';
 }
 
 refreshSelect();
@@ -163,8 +197,9 @@ $('#addList').addEventListener('click', () => {
   elements.status.textContent = `Added List ${number}.`;
   elements.name.focus();
 });
-$('#correctWord').addEventListener('click', () => markWord(true));
-$('#incorrectWord').addEventListener('click', () => markWord(false));
+$('#correctWord').addEventListener('click', () => markWord('independent'));
+$('#supportedWord').addEventListener('click', () => markWord('supported'));
+$('#incorrectWord').addEventListener('click', () => markWord('revisit'));
 $('#endPractice').addEventListener('click', backToLists);
 $('#backToLists').addEventListener('click', backToLists);
 $('#repeatList').addEventListener('click', beginPractice);

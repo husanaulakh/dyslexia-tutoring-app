@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advanceReviewQueue, buildReviewQueue, normalizeWordLists, normalizeReadingWord, parseReadingWords } from '../../assets/js/reading-words-logic.mjs';
+import {
+  advanceReviewQueue, buildReviewQueue, createReadingOutcomeCounts, normalizeReadingOutcome,
+  normalizeWordLists, normalizeReadingWord, parseReadingWords, recordReadingOutcome,
+} from '../../assets/js/reading-words-logic.mjs';
 
 test('reading words accept single words with optional apostrophes or hyphens', () => {
   assert.equal(normalizeReadingWord(' Duck '), 'duck');
@@ -58,4 +61,27 @@ test('a missed word in a short list returns and no more repeats are created', ()
   assert.deepEqual(queue.map(item => [item.word, item.isReview]), [['cat', true]]);
   queue = advanceReviewQueue(queue, false);
   assert.deepEqual(queue, []);
+});
+
+test('With help and Revisit schedule one retry, while Independent does not', () => {
+  for (const outcome of ['supported', 'revisit']) {
+    let queue = advanceReviewQueue(buildReviewQueue(['ship', 'chat']), outcome);
+    assert.deepEqual(queue.map(item => [item.word, item.isReview]), [['chat', false], ['ship', true]]);
+    queue = advanceReviewQueue(queue, 'independent');
+    queue = advanceReviewQueue(queue, 'revisit');
+    assert.deepEqual(queue, []);
+  }
+  assert.deepEqual(advanceReviewQueue(buildReviewQueue(['ship']), 'independent'), []);
+});
+
+test('reading outcomes normalize to three tutor ratings and aggregate without response text', () => {
+  let initial = createReadingOutcomeCounts();
+  initial = recordReadingOutcome(initial, 'independent');
+  initial = recordReadingOutcome(initial, 'supported');
+  let retry = createReadingOutcomeCounts();
+  retry = recordReadingOutcome(retry, 'independent');
+  assert.deepEqual(initial, { independent: 1, supported: 1, revisit: 0 });
+  assert.deepEqual(retry, { independent: 1, supported: 0, revisit: 0 });
+  assert.equal(normalizeReadingOutcome('bad'), '');
+  assert.equal(JSON.stringify({ initial, retry }).includes('learner'), false);
 });

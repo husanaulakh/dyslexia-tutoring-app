@@ -26,7 +26,10 @@ function formatSession(session) {
   const progress = `${session.completedItems} of ${session.totalItems} items`;
   const accuracy = session.accuracy === undefined ? '' : ` · ${session.accuracy}% accuracy`;
   const duration = session.durationSeconds === undefined ? '' : ` · ${session.durationSeconds}s`;
-  return `${title} · ${progress}${accuracy}${duration} · ${date}`;
+  const formatCounts = counts => `${counts.independent} independent, ${counts.supported} with help, ${counts.revisit} revisit`;
+  const outcomes = session.outcomeCounts ? ` · First responses: ${formatCounts(session.outcomeCounts)}` : '';
+  const retries = session.retryOutcomeCounts ? ` · Retries: ${formatCounts(session.retryOutcomeCounts)}` : '';
+  return `${title} · ${progress}${accuracy}${duration}${outcomes}${retries} · ${date}`;
 }
 
 function statusMessage(root, message, isError = false) {

@@ -36,9 +36,24 @@ export function buildReviewQueue(words) {
 export function advanceReviewQueue(queue, wasCorrect) {
   if (!Array.isArray(queue) || queue.length === 0) return [];
   const [current, ...remaining] = queue;
-  if (wasCorrect === false && !current.isReview) {
+  const needsReview = typeof wasCorrect === 'string' ? wasCorrect !== 'independent' : wasCorrect === false;
+  if (needsReview && !current.isReview) {
     const review = { id: `${current.id}-review`, word: current.word, isReview: true };
     remaining.splice(Math.min(3, remaining.length), 0, review);
   }
   return remaining;
+}
+
+export function normalizeReadingOutcome(value) {
+  return ['independent', 'supported', 'revisit'].includes(value) ? value : '';
+}
+
+export function createReadingOutcomeCounts() {
+  return { independent: 0, supported: 0, revisit: 0 };
+}
+
+export function recordReadingOutcome(counts, value) {
+  const outcome = normalizeReadingOutcome(value);
+  if (!outcome || !counts || !Number.isInteger(counts[outcome]) || counts[outcome] < 0) return counts;
+  return { ...counts, [outcome]: counts[outcome] + 1 };
 }

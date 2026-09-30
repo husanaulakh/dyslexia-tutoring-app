@@ -95,15 +95,19 @@ function normalizeSession(record, students, index) {
   if (Array.isArray(record.conceptIds)) {
     session.conceptIds = [...new Set(record.conceptIds.filter(id => typeof id === 'string' && ASSESSMENT_ITEM_IDS.has(id)))].slice(0, 100);
   }
-  if (record.outcomeCounts && typeof record.outcomeCounts === 'object' && !Array.isArray(record.outcomeCounts)) {
+  let ratedItems = 0;
+  for (const field of ['outcomeCounts', 'retryOutcomeCounts']) {
+    if (record[field] === undefined) continue;
+    if (!record[field] || typeof record[field] !== 'object' || Array.isArray(record[field])) return null;
     const counts = {};
     for (const name of ['independent', 'supported', 'revisit']) {
-      const count = normalizeCount(record.outcomeCounts[name]);
-      if (count === null) return null;
-      counts[name] = Math.min(count, totalItems);
+      const count = normalizeCount(record[field][name]);
+      if (count === null || count > completedItems) return null;
+      counts[name] = count;
     }
-    if (counts.independent + counts.supported + counts.revisit > totalItems) return null;
-    session.outcomeCounts = counts;
+    ratedItems += counts.independent + counts.supported + counts.revisit;
+    if (ratedItems > completedItems) return null;
+    session[field] = counts;
   }
   if (Number.isFinite(record.accuracy) && record.accuracy >= 0 && record.accuracy <= 100) {
     session.accuracy = Math.round(record.accuracy * 10) / 10;

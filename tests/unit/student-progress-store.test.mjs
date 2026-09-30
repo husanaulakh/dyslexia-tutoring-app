@@ -165,3 +165,17 @@ test('scope assessment is validated, persisted per student, updated, and reset i
   assert.equal(migrated.assessment.length, 1);
   assert.equal(migrated.assessment[0].studentId, b.id);
 });
+
+
+test('first response and retry outcomes remain separate, bounded aggregates', () => {
+  const data = migrateStudentData({ schemaVersion: 3, students: [{ id: 's-1', name: 'L01' }], sessions: [
+    { id: 'separate', studentId: 's-1', activity: 'reading-words', completedItems: 3, totalItems: 3,
+      outcomeCounts: { independent: 1, supported: 1, revisit: 0 },
+      retryOutcomeCounts: { independent: 1, supported: 0, revisit: 0 }, learnerResponses: ['private'] },
+    { id: 'inflated', studentId: 's-1', activity: 'reading-words', completedItems: 1, totalItems: 5,
+      outcomeCounts: { independent: 1, supported: 1, revisit: 0 } },
+  ] });
+  assert.equal(data.sessions.length, 1);
+  assert.deepEqual(data.sessions[0].retryOutcomeCounts, { independent: 1, supported: 0, revisit: 0 });
+  assert.equal(Object.hasOwn(data.sessions[0], 'learnerResponses'), false);
+});
