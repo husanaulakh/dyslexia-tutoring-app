@@ -10,7 +10,7 @@ const descriptors = [
   { id: 'paragraph-reading', label: 'Paragraph Reading', path: '/activities/paragraph-reading.html', kind: 'reading', available: true, conceptIds: ['l1-connected-text', 'l2-connected-text', 'l3-advanced-review'], supportedModes: ['screen', 'paper'] },
   { id: 'sound-boxes', label: 'Sound Boxes', path: '/activities/sound-boxes.html', kind: 'practice', available: true, conceptIds: ['l1-short-vowels', 'l1-digraphs', 'l1-blends'], supportedModes: ['screen', 'paper'] },
   { id: 'auditory-dictation', label: 'Auditory Dictation', path: '/activities/auditory-dictation.html', kind: 'practice', available: true, conceptIds: ['l1-short-vowel-spelling', 'l1-digraphs', 'l1-blends'], supportedModes: ['screen', 'paper'] },
-  { id: 'word-workshop', label: 'Word Workshop', path: '/activities/word-workshop.html', kind: 'practice', available: false, conceptIds: ['l1-silent-e', 'l1-floss', 'l1-vccv', 'l2-open-syllable', 'l2-vowel-teams'], supportedModes: ['screen', 'paper'] },
+  { id: 'word-workshop', label: 'Word Workshop', path: '/activities/word-workshop.html', kind: 'practice', available: true, conceptIds: ['l1-silent-e', 'l1-floss', 'l1-vccv', 'l1-closed-syllable', 'l2-open-syllable', 'l2-vowel-teams', 'l2-vowel-r', 'l2-consonant-le'], supportedModes: ['screen', 'paper'] },
   { id: 'student-progress', label: 'Student Progress', path: '/activities/student-progress.html', kind: 'tracking', available: true, conceptIds: [], supportedModes: [] },
   { id: 'ufli-blending-board', label: 'UFLI Blending Board', path: '/activities/ufli-blending-board.html', kind: 'external', available: true, conceptIds: ['l1-short-vowels', 'l1-digraphs', 'l1-blends'], supportedModes: ['screen'] },
 ];

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8faf5">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="Tutor-led word study with explicit spelling and syllable annotations.">
+  <title>Word Workshop | Bright Steps</title>
+  <link rel="stylesheet" href="/assets/css/activity-tools.css">
+  <link rel="stylesheet" href="/assets/css/student-tracker.css">
+  <link rel="stylesheet" href="/assets/css/word-workshop.css">
+  <link rel="stylesheet" href="/assets/css/theme.css">
+</head>
+<body>
+  <main class="workshop-shell">
+    <div id="lessonToolbar"></div>
+    <nav class="nav" aria-label="Activity navigation"><a href="../">← Bright Steps</a></nav>
+    <header class="intro">
+      <div><div class="eyebrow">Tutor-led word study</div><h1>Word Workshop</h1><p>Explore spelling patterns, syllable types, and tutor-marked syllable divisions. The tutor chooses and confirms each response.</p></div>
+      <div class="workshop-art" aria-hidden="true"><span>ā</span><span>ai</span><span>ay</span></div>
+    </header>
+    <div id="studentTracker" class="tracker-host" data-tutor-tools></div>
+
+    <section id="setupPanel" class="panel tutor-tools" data-tutor-tools aria-labelledby="setupTitle">
+      <div class="section-heading"><div><h2 id="setupTitle">Choose a workshop</h2><p>Use these activities on screen or with paper and pencil. Starter examples are tutor-curated.</p></div></div>
+      <div class="form-grid">
+        <div class="field"><label for="strandSelect">Workshop</label><select id="strandSelect">
+          <option value="silent-e">Silent-e transformations</option>
+          <option value="sort">FLOSS, ai, and ay sort</option>
+          <option value="syllables">Six syllable types</option>
+          <option value="vccv">Annotated VC.CV practice</option>
+        </select></div>
+        <div class="field"><label for="responseMode">Response mode</label><select id="responseMode"><option value="screen">On screen</option><option value="paper">Paper or tutor response</option></select></div>
+      </div>
+      <details class="annotation-editor" id="annotationEditor">
+        <summary>Add an explicit VC.CV annotation</summary>
+        <p>Enter a word and its tutor-confirmed split as <code>nap/kin</code>. Splits are never guessed from spelling.</p>
+        <div class="form-grid">
+          <div class="field"><label for="customWord">Word</label><input id="customWord" maxlength="24" autocomplete="off" inputmode="latin" placeholder="basket"></div>
+          <div class="field"><label for="customSplit">Tutor-marked split</label><input id="customSplit" maxlength="25" autocomplete="off" inputmode="latin" placeholder="bas/ket"></div>
+        </div>
+        <div class="field"><label for="customNote">Optional tutor note</label><input id="customNote" maxlength="100" autocomplete="off" placeholder="The middle consonants are s and k."></div>
+        <p class="status" id="annotationStatus" role="status" aria-live="polite"></p>
+        <button class="btn secondary" id="addAnnotation" type="button">Save annotation</button>
+      </details>
+      <p class="privacy-note">Custom practice words and their tutor annotations stay in this browser. Learner responses are not saved.</p>
+      <p id="setupStatus" class="status" role="status" aria-live="polite"></p>
+      <div class="actions"><button class="btn primary" id="startPractice" type="button">Start practice</button></div>
+    </section>
+
+    <section id="practicePanel" class="panel practice" data-reading-content hidden aria-labelledby="practiceTitle">
+      <div class="practice-top"><span id="progressText" class="badge"></span><span id="strandBadge" class="badge soft"></span><button id="endPractice" class="text-button" type="button">End practice</button></div>
+      <h2 id="practiceTitle">Try the word task</h2>
+      <p id="taskPrompt" class="prompt"></p>
+      <div id="taskCard" class="task-card" aria-live="polite" aria-atomic="true">
+        <span id="itemLabel" class="card-label"></span>
+        <strong id="itemWord" tabindex="-1"></strong>
+        <p id="focusSyllable" class="focus-syllable" hidden></p>
+        <p id="itemNote" class="item-note" hidden></p>
+      </div>
+      <div id="interaction" class="interaction"></div>
+      <div class="answer-row" data-tutor-tools><button id="revealAnswer" class="btn secondary" type="button">Reveal tutor key</button><p id="revealedAnswer" class="revealed-answer" role="status" aria-live="polite" hidden></p></div>
+      <fieldset class="outcomes" data-tutor-tools><legend>Tutor-confirmed outcome</legend><div class="outcome-buttons">
+        <button type="button" class="btn outcome" data-outcome="independent" aria-pressed="false">Independent</button>
+        <button type="button" class="btn outcome" data-outcome="supported" aria-pressed="false">With help</button>
+        <button type="button" class="btn outcome" data-outcome="revisit" aria-pressed="false">Revisit</button>
+      </div></fieldset>
+      <div class="actions"><button id="nextItem" class="btn primary" type="button" disabled>Finish item</button></div>
+      <p id="practiceStatus" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="donePanel" class="panel done" hidden aria-labelledby="doneTitle">
+      <div class="eyebrow">Practice complete</div><h2 id="doneTitle">Workshop finished</h2><p id="doneSummary"></p>
+      <button id="again" class="btn primary" type="button">Set up another practice</button>
+    </section>
+  </main>
+  <script type="module" src="/assets/js/lesson-toolbar.js"></script>
+  <script type="module" src="/assets/js/word-workshop.js"></script>
+</body>
+</html>
