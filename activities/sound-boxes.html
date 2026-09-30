@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/assets/css/student-tracker.css">
   <link rel="stylesheet" href="/assets/css/sound-boxes.css">
   <link rel="stylesheet" href="/assets/css/theme.css">
+  <link rel="stylesheet" href="/assets/css/presentation.css">
 </head>
 <body>
   <main class="sound-shell">
@@ -28,7 +29,7 @@
       <p id="setupError" class="status error" role="status" aria-live="polite"></p>
       <div class="actions"><button class="btn primary" id="startPractice" type="button">Start practice</button></div>
     </section>
-    <section id="practicePanel" class="panel practice" data-reading-content hidden aria-labelledby="practiceTitle">
+    <section id="practicePanel" class="panel practice" hidden aria-labelledby="practiceTitle">
       <div class="practice-top"><span id="progressText" class="badge"></span><button id="endPractice" class="text-button" type="button">End practice</button></div>
       <h2 id="practiceTitle">Listen and count the sounds</h2>
       <p id="promptText" class="prompt">Tutor: say the word aloud. Have the learner move one counter for each sound.</p>
@@ -45,5 +46,6 @@
   </main>
   <script type="module" src="/assets/js/lesson-toolbar.js"></script>
   <script type="module" src="/assets/js/sound-boxes.js"></script>
+  <script type="module" src="/assets/js/presentation.js"></script>
 </body>
 </html>

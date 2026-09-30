@@ -8,13 +8,14 @@
   <link rel="stylesheet" href="/assets/css/theme.css">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <link rel="stylesheet" href="/assets/css/activity-tools.css">
+  <link rel="stylesheet" href="/assets/css/presentation.css">
 </head>
 <body>
 <main class="wrap">
 <nav aria-label="Activity navigation"><a class="home-link" href="../" aria-label="Back to Bright Steps activities">← Bright Steps</a></nav>
 <header class="panel"><div class="header">
 <div><div class="eyebrow">Blending board</div><h1>Click, change, blend.</h1><div class="sub">Each tile shows one spelling chunk. A chunk can be one or more letters; tile count is not the same as phoneme count.</div></div>
-<div class="filters"><div class="row" id="soundFilters"></div><div class="row" id="lessonFilters"></div></div>
+<div class="filters" data-tutor-tools><div class="row" id="soundFilters"></div><div class="row" id="lessonFilters"></div></div>
 </div></header>
 
 <div class="layout">
@@ -22,10 +23,10 @@
 <div class="topline"><div><div class="label">Current blend</div><div class="current" id="currentWord">fan</div></div><div class="mode" id="modeBadge"></div></div>
 <div class="stage" id="stage"></div>
 <div class="prompt" id="prompt" style="display:none"><div class="label" style="color:#c2410c">Tutor prompt</div><div style="margin-top:8px;font-weight:800">Click a spelling tile to change that part. Student reads the tiles, then blends:<strong id="promptText"></strong></div></div>
-<div class="actions"><button class="btn primary" id="nextBtn">Next word</button><button class="btn orange" id="randomBtn">Random</button><button class="btn soft" id="startBtn">Start list</button><button class="btn" id="resetBtn">Reset all</button></div>
+<div class="actions"><button class="btn primary" id="nextBtn">Next word</button><button class="btn orange" id="randomBtn">Random</button><button class="btn soft" id="startBtn">Start list</button><button class="btn" id="resetBtn" data-tutor-tools>Reset all</button></div>
 </section>
 
-<aside>
+<aside data-tutor-tools>
 <section class="panel">
 <div class="section-head"><div><div class="section-title">Tutor tools</div><div class="small">Add words with 2–6 spelling tiles.</div></div><button class="toggle" id="toolsToggle" type="button">Hide</button></div>
 <div class="tools" id="toolsBody">
@@ -47,4 +48,5 @@
 
 <script type="module" src="../assets/js/blending-board.js"></script>
   <script type="module" src="/assets/js/lesson-toolbar.js"></script>
+  <script type="module" src="/assets/js/presentation.js"></script>
 </body></html>

@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/assets/css/student-tracker.css">
   <link rel="stylesheet" href="/assets/css/auditory-dictation.css">
   <link rel="stylesheet" href="/assets/css/theme.css">
+  <link rel="stylesheet" href="/assets/css/presentation.css">
 </head>
 <body>
   <main class="dictation-shell">
@@ -24,13 +25,13 @@
       <p id="setupError" class="status error" role="status" aria-live="polite"></p>
       <div class="actions"><button class="btn primary" id="startPractice" type="button">Start dictation</button></div>
     </section>
-    <section id="practicePanel" class="panel practice" data-reading-content hidden aria-labelledby="practiceTitle">
+    <section id="practicePanel" class="panel practice" hidden aria-labelledby="practiceTitle">
       <div class="practice-top"><span id="progressText" class="badge"></span><button id="endPractice" class="text-button" type="button">End practice</button></div>
       <h2 id="practiceTitle">Listen carefully</h2>
       <p id="itemKind" class="item-kind"></p>
       <p id="tutorInstruction" class="hint">Tutor: say the sound or word aloud. The prompt is hidden from the learner’s view.</p>
       <div class="tutor-prompt-tools" data-tutor-tools><p><strong>Tutor prompt:</strong> this is a shared screen; showing the prompt displays it to everyone.</p><button id="showPrompt" class="btn secondary" type="button">Show tutor prompt</button></div>
-      <p id="prompt" class="prompt" hidden></p>
+      <p id="prompt" data-tutor-tools class="prompt" hidden></p>
       <div id="typedResponse" class="field response-field" hidden><label for="response">Learner response</label><input id="response" type="text" maxlength="30" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="responseHelp"><p id="responseHelp" class="hint">The response stays in this page and is cleared before the next item.</p></div>
       <p id="paperHelp" class="paper-help" hidden>Use paper or a whiteboard for the response. No learner response is saved here.</p>
       <div class="actions"><button id="revealAnswer" class="btn primary" type="button">Reveal accepted spelling</button></div>
@@ -43,5 +44,6 @@
   </main>
   <script type="module" src="/assets/js/lesson-toolbar.js"></script>
   <script type="module" src="/assets/js/auditory-dictation.js"></script>
+  <script type="module" src="/assets/js/presentation.js"></script>
 </body>
 </html>
