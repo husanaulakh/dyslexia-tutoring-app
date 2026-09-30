@@ -10,7 +10,7 @@ async function addStep(page, activity, mode, { preset, items, list } = {}) {
 }
 async function finishStep(page, next) {
   await page.locator('#lessonToolbar').getByRole('button', { name: 'Finish step' }).click();
-  await expect(page).toHaveURL(new RegExp(`/activities/${next}\\.html$`));
+  await expect(page).toHaveURL(new RegExp(`/activities/${next}\\.html(?:\\?.*)?$`));
 }
 
 test('a complete mixed-level lesson spans existing and new paper/screen activities with pinned attribution', async ({ page }) => {

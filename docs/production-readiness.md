@@ -16,18 +16,19 @@ Reviewed September 30, 2026. Bright Steps is suitable for tutor-led use as a sta
 | Repeated suggestions consumed saved-list capacity | Reuse an exact unchanged suggested list, including at the 12-list limit; preserve edited lists. |
 | Board, card, and tracing rerenders lost keyboard focus | Restore relevant control focus and test repeated keyboard operation. |
 | Covered spelling permitted unbounded retries | Allow one retry, then provide tutor-confirmed continuation; retain paper and reduced-motion paths. |
+| Planning lacked a guided end-to-end tutor workflow | Add a four-stage wizard, editable steps, draft and template recovery, validated saved material, Back/Next/Resume, and a completion summary. Test a complete guided lesson and an eight-activity mixed lesson. |
 | Sound Box inputs beyond 40 annotations were silently truncated | Reject excessive nonblank entries explicitly; phoneme counts still depend on tutor annotations. |
 
 ## Maintainability
 
-Repeated outcome validation, aggregate-session lifecycle, tutor-collection storage protection, and route comparison now live in shared modules. Activity-specific interaction and content remain in their own small modules, with unit tests for pure logic and browser tests for integration. Reading and Paragraph editor markup remains separate because their prompts and practice flows differ; a framework or build pipeline is unnecessary for the present scope.
+Repeated outcome validation, aggregate-session lifecycle, tutor-collection storage protection, and route comparison now live in shared modules. Board dictionaries and saved VC.CV catalogs are shared between lesson planning and practice. Activity-specific interaction and content remain in their own small modules, with unit tests for pure logic and browser tests for integration. Reading and Paragraph editor markup remains separate because their prompts and practice flows differ; a framework or build pipeline is unnecessary for the present scope.
 
 The site has no runtime npm dependencies, backend, analytics, or added external scripts. Development dependencies are lockfile-managed. Continue running syntax, unit, browser, and accessibility checks for every change, and periodically review dependency updates and the audit report. New scored activities should use the shared session and outcome helpers.
 
 ## Validation
 
 - JavaScript syntax checks passed.
-- 78 unit tests passed.
+- 83 unit tests passed.
 - 85 Chromium browser tests passed, including axe accessibility checks, narrow screens, keyboard use, hostile input, reduced motion, paper/screen responses, answer concealment, storage migrations, retry bounds, failure recovery, and a mixed-level lesson.
 - `npm audit`: zero reported vulnerabilities.
 - Production route behavior is exercised locally using redirects matching the repository's `cleanUrls` setting. See [Vercel's configuration documentation](https://vercel.com/docs/project-configuration/vercel-json).

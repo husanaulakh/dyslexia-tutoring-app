@@ -106,3 +106,12 @@ test('starting a lesson preserves an existing or unreadable active snapshot', ()
   assert.equal(startLesson(template, 'student-2', session).error, 'invalid-data');
   assert.equal(session.getItem(ACTIVE_LESSON_KEY), future);
 });
+
+
+test('saving templates preserves unreadable existing material', () => {
+  const storage = new MemoryStorage();
+  const raw = '{unreadable existing templates';
+  storage.setItem(LESSON_TEMPLATE_KEY, raw);
+  assert.equal(saveLessonTemplates([template], storage).ok, false);
+  assert.equal(storage.getItem(LESSON_TEMPLATE_KEY), raw);
+});

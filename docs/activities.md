@@ -65,6 +65,7 @@ Bright Steps has no server-side learner database. These local browser keys are o
 |---|---|---|
 | `bright-steps-student-progress` | `localStorage` | Student labels, activity summaries, aggregate outcomes, and assessment statuses. Schema version 3 migrates unversioned version 0, version 1, and version 2 data. |
 | `bright-steps-lesson-templates` | `localStorage` | Reusable lesson templates, including activity IDs, selected concept IDs, response modes, and allowlisted settings. |
+| `bright-steps-lesson-builder-draft` | `localStorage` | In-progress plan configuration, selected template ID and wizard stage; no learner labels or responses. |
 | `bright-steps-pending-outcomes` | `sessionStorage` | Up to 20 failed aggregate checkpoints retained for same-tab recovery; no learner response text. |
 | `bright-steps-active-lesson` | `sessionStorage` | Active template snapshot, pinned learner ID, current step index, completed step IDs, and start time for the current tab session. |
 | `bright-steps-presentation` | `localStorage` | Text size and line spacing preferences. |
@@ -90,3 +91,5 @@ The project remains static HTML, CSS, and JavaScript. No build step, deployment 
 Completed tutor outcomes checkpoint immediately. Reloading preserves completed aggregates, but the activity's current card position and unfinished typed work reset. Failed checkpoints use the same ID on retry and are recovered from session storage when possible. Recovery writes only the original learner's aggregate, even if another learner is now selected. Active lessons have a persisted run ID; delayed snapshots cannot decrease a stored completion count. End lesson retains its active state when the learner cannot be verified or a save fails.
 
 If both local storage and session storage are unavailable, keep the activity open and retry after restoring storage. Browser unload protection is best effort; clearing site data or closing a tab with unsaved session-only recovery can still lose those outcomes. Stored data from a newer schema and malformed stored collections are preserved for manual recovery. Cross-device synchronization, automatic backup, and multi-tutor concurrent editing are outside the current static application's scope.
+
+Lesson Builder’s guided stages, draft recovery, step editing, saved material selection, and completion flow are described in [the tutor planning guide](lesson-planning.md). The homepage **Build a lesson** link starts the wizard; direct activity access stays available.

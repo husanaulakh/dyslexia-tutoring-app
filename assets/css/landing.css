@@ -6,3 +6,7 @@
     @media(max-width:760px){.hero{min-height:390px;align-items:flex-start}.hero-copy{max-width:100%}.hero-orbit{width:170px;height:170px;right:20px;top:auto;bottom:-65px;transform:none;opacity:.85}.hero-orbit:before{inset:16px}.hero-orbit:after{inset:34px}.letter-card{width:53px;height:61px;border-radius:14px;font-size:29px}.letter-card.one{left:24px;top:28px}.letter-card.two{right:22px;top:50px}.letter-card.three{left:54px;bottom:10px}.grid{grid-template-columns:1fr}.section-head{margin-top:48px}.activity{min-height:280px}}
     @media(max-width:480px){.shell{width:min(100% - 28px,1120px)}.nav{height:68px}.nav-note{font-size:12px}.hero{padding:30px 24px;border-radius:27px;min-height:400px}.hero p{font-size:16px}.activity{padding:22px}.footer{flex-direction:column}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+
+.hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .8rem; margin-top: 1.25rem; }
+.hero-actions .plan-lesson { display: inline-flex; align-items: center; min-height: 44px; padding: .75rem 1.15rem; border-radius: .7rem; background: var(--brand-green, #456b08); color: #fff; font-weight: 700; text-decoration: none; }
+.hero-actions span { max-width: 22rem; font-size: .9rem; line-height: 1.5; color: var(--brand-muted, #65738a); }

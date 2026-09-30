@@ -1,9 +1,15 @@
 import { buildLetterTriplets, chooseMissingIndex } from './learning-logic.mjs';
+import { getLessonActivityContext } from './lesson-context.mjs';
 (() => {
   const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
+  const lessonContext = getLessonActivityContext('whats-missing-cards');
+  const requestedCount = lessonContext?.settings?.count;
+  const lessonCardCount = Number.isInteger(requestedCount) && requestedCount >= 1 && requestedCount <= 24 ? requestedCount : null;
+  const requestedMode = lessonContext?.settings?.mode;
+  const lessonMissingMode = ['first', 'middle', 'last', 'random'].includes(requestedMode) ? requestedMode : null;
   const state = {
-    cardCount: 10,
-    missingMode: "middle",
+    cardCount: lessonCardCount ?? 10,
+    missingMode: lessonMissingMode ?? "middle",
     deck: [],
     phase: "setup",
     completed: 0,
@@ -73,15 +79,15 @@ import { buildLetterTriplets, chooseMissingIndex } from './learning-logic.mjs';
 
               <div class="field">
                 <label for="cardCount">Number of cards</label>
-                <input id="cardCount" type="number" min="1" max="24" value="${state.cardCount}">
-                <p class="hint">Default = 10</p>
+                <input id="cardCount" type="number" min="1" max="24" value="${state.cardCount}" ${lessonCardCount !== null ? 'disabled aria-describedby="lessonSettingsHint"' : ''}>
+                <p class="hint" id="lessonSettingsHint">${lessonCardCount !== null ? 'Set by this lesson.' : 'Default = 10'}</p>
               </div>
 
               <div class="field">
                 <label>Missing letter position</label>
                 <div class="segments">
                   ${["first","middle","last","random"].map(x=>`
-                    <button class="segment ${state.missingMode===x?"active":""}" data-mode="${x}">
+                    <button class="segment ${state.missingMode===x?"active":""}" data-mode="${x}" ${lessonMissingMode !== null ? 'disabled' : ''}>
                       ${x[0].toUpperCase()+x.slice(1)}
                     </button>`).join("")}
                 </div>
@@ -256,6 +262,7 @@ import { buildLetterTriplets, chooseMissingIndex } from './learning-logic.mjs';
   document.addEventListener("click",(e)=>{
     const modeBtn=e.target.closest("[data-mode]");
     if(modeBtn){
+      if (lessonMissingMode !== null) return;
       state.missingMode=modeBtn.dataset.mode;
       render();
       return;

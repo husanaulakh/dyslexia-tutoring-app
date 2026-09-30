@@ -43,6 +43,7 @@ const state = {
   outcomeCounts: createParagraphOutcomeCounts(), retryOutcomeCounts: createParagraphOutcomeCounts(),
 };
 state.selectedId = state.lists[0].id;
+const missingLessonList = Boolean(lessonContext?.settings?.listId && (storedLists.error || !state.lists.some(list => list.id === lessonContext.settings.listId)));
 
 if (lessonContext?.settings?.listId && state.lists.some(list => list.id === lessonContext.settings.listId)) {
   state.selectedId = lessonContext.settings.listId;
@@ -107,6 +108,7 @@ function saveEditor(showMessage = true) {
   return list;
 }
 function beginPractice() {
+  if (missingLessonList) { elements.status.textContent = 'The saved list selected for this lesson is not available. Review the lesson plan or restore that list before starting.'; return; }
   if (!session.flush()) return;
   const student = tracker.getSelectedStudent();
   if (!student) { elements.status.textContent = 'Add or select a student above before starting.'; return; }
@@ -252,3 +254,9 @@ $('#endPractice').addEventListener('click', backToLists);
 $('#backToLists').addEventListener('click', backToLists);
 $('#repeatList').addEventListener('click', beginPractice);
 $('#doneToLists').addEventListener('click', backToLists);
+
+if (missingLessonList) {
+  $('#startPractice').disabled = true;
+  elements.select.disabled = true;
+  elements.status.textContent = 'The saved list selected for this lesson is not available. Review the lesson plan or restore that list before starting.';
+}

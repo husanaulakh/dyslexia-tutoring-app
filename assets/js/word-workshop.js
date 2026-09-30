@@ -3,7 +3,7 @@ import { mountStudentTracker } from './student-tracker.js';
 import { getLessonActivityContext } from './lesson-context.mjs';
 import {
   checkSortAnswer, checkSyllableAnswer, checkVcCvAnswer, createOutcomeCounts,
-  getSortCategory, getSyllableType, getWorkshopItems, loadCustomVcCvItems,
+  getSortCategory, getSyllableType, getWorkshopItems, loadCustomVcCvCatalog,
   normalizeVcCvAnnotation, recordOutcome, saveCustomVcCvItems,
 } from './word-workshop-logic.mjs';
 
@@ -25,7 +25,8 @@ const labels = {
   vccv: 'Annotated VC.CV practice',
 };
 const lessonContext = getLessonActivityContext('word-workshop');
-let customItems = loadCustomVcCvItems();
+let customCatalog = loadCustomVcCvCatalog();
+let customItems = customCatalog.items;
 let state = { strand: 'silent-e', mode: 'screen', items: [], index: 0, completed: 0, outcomeCounts: createOutcomeCounts(), studentId: '', startedAt: 0, selectedOutcome: '', selectedChoice: '', response: '', responseChecked: false, saved: false };
 
 function make(tag, text = '', className = '') {
@@ -272,15 +273,25 @@ function addAnnotation() {
     return;
   }
   const next = [...customItems.filter(item => item.word !== annotation.word), annotation];
-  const result = saveCustomVcCvItems(next);
+  const result = saveCustomVcCvItems(next, undefined, customCatalog);
   customItems = result.items;
-  $('#annotationStatus').textContent = result.ok ? `Saved tutor annotation for ${annotation.word}.` : `The annotation for ${annotation.word} is available for this visit, but browser storage did not save it.`;
+  if (result.ok) customCatalog = { items: result.items, raw: result.raw, error: null };
+  $('#annotationStatus').textContent = result.ok
+    ? `Saved tutor annotation for ${annotation.word}.`
+    : result.error === 'invalid-data'
+      ? 'Saved tutor annotations could not be read. Existing browser data was left untouched; this annotation is available for this visit only.'
+      : result.error === 'changed'
+        ? 'Saved tutor annotations changed in another view. Existing browser data was left untouched; reload before saving again.'
+        : `The annotation for ${annotation.word} is available for this visit, but browser storage did not save it.`;
   $('#customWord').value = '';
   $('#customSplit').value = '';
   $('#customNote').value = '';
 }
 
 renderStrandFromContext();
+if (customCatalog.error) {
+  $('#annotationStatus').textContent = 'Saved tutor annotations could not be read. Existing browser data was left untouched; custom annotations remain unavailable until storage is readable.';
+}
 $('#startPractice').addEventListener('click', beginPractice);
 $('#endPractice').addEventListener('click', endPractice);
 $('#revealAnswer').addEventListener('click', revealAnswer);

@@ -127,3 +127,29 @@ test('an invalid lesson item selection reports an error without substituting oth
   await expect(page.locator('#setupStatus')).toContainText('No items are available');
   await expect(page.locator('#practicePanel')).toBeHidden();
 });
+
+test('custom VC.CV annotations remain intact when unreadable and lesson selection can target a saved annotation', async ({ page }) => {
+  await page.goto('/activities/word-workshop.html');
+  await page.evaluate(() => localStorage.setItem('bright-steps-word-workshop-v1', '{broken annotations'));
+  await page.reload();
+  await addLearner(page);
+  await expect(page.locator('#annotationStatus')).toContainText('could not be read');
+  await page.locator('#annotationEditor summary').click();
+  await page.getByLabel('Word', { exact: true }).fill('dentist');
+  await page.getByLabel('Tutor-marked split').fill('den/tist');
+  await page.getByRole('button', { name: 'Save annotation' }).click();
+  await expect(page.locator('#annotationStatus')).toContainText('left untouched');
+  expect(await page.evaluate(() => localStorage.getItem('bright-steps-word-workshop-v1'))).toBe('{broken annotations');
+
+  await page.evaluate(() => {
+    const store = JSON.parse(localStorage.getItem('bright-steps-student-progress'));
+    localStorage.setItem('bright-steps-word-workshop-v1', JSON.stringify([{ word: 'dentist', split: 'den/tist' }]));
+    sessionStorage.setItem('bright-steps-active-lesson', JSON.stringify({
+      version: 1, studentId: store.students[0].id, index: 0, completedStepIds: [], startedAt: new Date().toISOString(),
+      template: { id: 'custom-vccv', name: 'Tutor review', conceptIds: [], steps: [{ id: 'custom-step', activityId: 'word-workshop', responseMode: 'paper', settings: { workshop: 'vccv', itemIds: ['custom-dentist-3'] } }] },
+    }));
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Start practice' }).click();
+  await expect(page.locator('#itemWord')).toHaveText('dentist');
+});

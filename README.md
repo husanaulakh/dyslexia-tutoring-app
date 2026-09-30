@@ -4,7 +4,7 @@ Bright Steps is a static collection of tutor-led reading practice tools. It uses
 
 ## Activities
 
-- **Lesson Builder** saves reusable templates, attaches scope concepts, and arranges an ordered sequence of available activities. A lesson keeps the learner selected at start, and the shared toolbar provides Back, Finish step, Next, and End lesson navigation.
+- **Lesson Builder** includes a four-stage planning wizard for the learner and plan, concepts, activities, and review. It supports editing, ordering and removing steps, draft recovery, reusable templates, and selecting saved tutor material. A lesson keeps the learner selected at start, and the shared toolbar provides Back, Finish step, Next, and End lesson navigation.
 - **Sound Boxes** uses tutor-provided phoneme annotations for 2–6 sounds. Phoneme counts are not inferred from the number of letters. Learners can use physical counters or on-screen counters; the written word is revealed after mapping.
 - **Auditory Dictation** has the tutor say a sound or word. Learners respond on paper or type; the tutor reveals accepted spellings and records an outcome.
 - **Word Workshop** includes silent-e transformations, FLOSS/ai/ay sorting, six syllable types, and explicitly annotated VC.CV practice.
@@ -41,3 +41,5 @@ No environment variables are required. The static hosting setup and Content Secu
 Student labels, aggregate activity summaries, assessment statuses, lesson templates, and presentation preferences remain in the current browser profile on the same origin. They are not backed up or synchronized to other devices. Use initials or non-identifying learner codes. Typed and spoken learner responses are not stored in session summaries. Tutor Suggestions saves selected word lists locally and opens them in Reading Words with a validated `?list=` ID; this does not start a lesson or select a learner.
 
 Completed tutor outcomes are saved as one updating aggregate per practice run, including partial practice. Failed saves offer a retry and keep aggregate-only recovery data in the current tab when session storage is available. Recovery retains the original learner ID. Unreadable or newer stored data is preserved rather than replaced. See [the production-readiness review](docs/production-readiness.md) for fixes, test coverage, and operational limits.
+
+To plan a complete session, choose **Build a lesson** on the homepage and follow the wizard. See [the tutor lesson-planning guide](docs/lesson-planning.md) for adding material, editing steps, navigating an active lesson, and reviewing completion.

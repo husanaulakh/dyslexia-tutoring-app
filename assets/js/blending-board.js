@@ -1,22 +1,14 @@
 import { getLessonActivityContext } from './lesson-context.mjs';
-import { cleanWord as clean, autoChunkWord as autoChunk, parseSoundSplit as parse, tokenizeBulkWords, normalizeStoredWord } from './learning-logic.mjs';
-
-const INITIAL_WORDS = [
-  ['cat',['c','a','t']],['bat',['b','a','t']],['hat',['h','a','t']],['mat',['m','a','t']],['sat',['s','a','t']],['rat',['r','a','t']],['pat',['p','a','t']],['fat',['f','a','t']],
-  ['cab',['c','a','b']],['cap',['c','a','p']],['can',['c','a','n']],['cot',['c','o','t']],['cut',['c','u','t']],['cup',['c','u','p']],['dog',['d','o','g']],['dig',['d','i','g']],
-  ['dip',['d','i','p']],['hid',['h','i','d']],['him',['h','i','m']],['hit',['h','i','t']],['dug',['d','u','g']],['sun',['s','u','n']],['map',['m','a','p']],['pig',['p','i','g']],['pit',['p','i','t']],
-  ['fan',['f','a','n']],['hop',['h','o','p']],['ship',['sh','i','p']],['shop',['sh','o','p']],['chip',['ch','i','p']],['chat',['ch','a','t']],['thin',['th','i','n']],['that',['th','a','t']],
-  ['fish',['f','i','sh']],['cash',['c','a','sh']],['stop',['s','t','o','p']],['frog',['f','r','o','g']],['clip',['c','l','i','p']],['flag',['f','l','a','g']],['drip',['d','r','i','p']],
-  ['plug',['p','l','u','g']],['milk',['m','i','l','k']],['jump',['j','u','m','p']],['hand',['h','a','n','d']],['desk',['d','e','s','k']],['tent',['t','e','n','t']],['tim',['t','i','m']],
-  ['belt',['b','e','l','t']],['pond',['p','o','n','d']],['lamp',['l','a','m','p']],['nest',['n','e','s','t']],['soft',['s','o','f','t']],
-].map(([word, chunks]) => ({ word, chunks, lessonTag: 'current' }));
-const STORAGE_KEY = 'blending-board-words-standalone';
+import { cleanWord as clean, autoChunkWord as autoChunk, parseSoundSplit as parse, tokenizeBulkWords } from './learning-logic.mjs';
+import { BLENDING_BOARD_STARTER_WORDS, BLENDING_BOARD_STORAGE_KEY, loadBlendingBoardWords } from './blending-board-data.mjs';
+import { saveStoredCollection } from './collection-storage.mjs';
 const $ = selector => document.querySelector(selector);
 const vowels = new Set(['a','e','i','o','u']);
 const context = getLessonActivityContext('blending-board');
-let savedWords = loadWords();
+let loadedWords = loadBlendingBoardWords();
+let lastSaveError = loadedWords.error;
 const state = {
-  words: savedWords,
+  words: loadedWords.items,
   soundMode: '3', lessonMode: 'current', currentChunks: ['f','a','n'], lastClicked: null,
   showPrompt: false, showTools: true, showDictionary: true, singleTag: 'current', bulkTag: 'current',
   lessonWordIds: Array.isArray(context?.settings.wordIds) ? context.settings.wordIds : null,
@@ -25,17 +17,17 @@ const state = {
 let confirmedSuggestion = '';
 let pendingBulk = [];
 
-function loadWords() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === null) return INITIAL_WORDS.map(item => ({ ...item, chunks: [...item.chunks] }));
-    const stored = JSON.parse(raw);
-    if (!Array.isArray(stored)) return INITIAL_WORDS.map(item => ({ ...item, chunks: [...item.chunks] }));
-    const valid = stored.map(normalizeStoredWord).filter(Boolean);
-    return stored.length > 0 && valid.length === 0 ? INITIAL_WORDS.map(item => ({ ...item, chunks: [...item.chunks] })) : valid;
-  } catch { return INITIAL_WORDS.map(item => ({ ...item, chunks: [...item.chunks] })); }
+function save() {
+  const saved = saveStoredCollection({ key: BLENDING_BOARD_STORAGE_KEY, items: state.words, loaded: loadedWords });
+  lastSaveError = saved.error;
+  if (saved.ok) loadedWords = { items: state.words, raw: saved.raw, error: null };
+  return saved.ok;
 }
-function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.words)); return true; } catch { return false; } }
+function saveMessage() {
+  if (lastSaveError === 'invalid-data') return ' Existing saved data is malformed and was left unchanged; repair or clear that data before changes can be saved.';
+  if (lastSaveError === 'changed') return ' The saved dictionary changed in another tab, so it was left unchanged; reload to use the latest version.';
+  return ' Browser storage is unavailable, so this change is for this session only.';
+}
 function lessonLabel(tag) { return tag === 'previous' ? 'Review' : 'This lesson'; }
 function chunkKey(chunks) { return chunks.join('|'); }
 function currentWord() { return state.currentChunks.join(''); }
@@ -115,7 +107,7 @@ function nextWord() { const words = valid(); if (!words.length) return; const i 
 function randomWord() { const words = valid(); if (!words.length) return; state.currentChunks = [...words[Math.floor(Math.random() * words.length)].chunks]; state.lastClicked = null; renderBoard(); }
 function startList() { const words = valid(); if (!words.length) return; state.currentChunks = [...words[0].chunks]; state.lastClicked = null; renderBoard(); }
 function choose(index) { const item = state.words[index]; if (!item) return; state.soundMode = String(item.chunks.length); state.lessonMode = item.lessonTag; state.currentChunks = [...item.chunks]; state.lastClicked = null; render(); }
-function removeWord(index) { state.words.splice(index, 1); const persisted = save(); ensureCurrent(); feedback(persisted ? 'Removed word.' : 'Removed for this session, but browser storage is unavailable.'); render(); }
+function removeWord(index) { state.words.splice(index, 1); const persisted = save(); ensureCurrent(); feedback(persisted ? 'Removed word.' : `Removed for this session only.${saveMessage()}`); render(); }
 function renderSegments(selector, selected, onChange) {
   const root = $(selector); root.replaceChildren();
   for (const [tag, label] of [['current','This lesson'],['previous','Review']]) {
@@ -154,7 +146,7 @@ function addSingle() {
   if (existing >= 0) state.words[existing] = item; else state.words.push(item);
   const persisted = save(); state.currentChunks = [...chunks]; state.soundMode = String(chunks.length); state.lessonMode = state.singleTag;
   $('#singleWord').value = ''; $('#soundSplit').value = ''; confirmedSuggestion = '';
-  feedback(`${existing >= 0 ? 'Updated' : 'Added'} ${word} with ${chunks.length} spelling tiles (${lessonLabel(state.singleTag)})${persisted ? '.' : ' for this session only; browser storage is unavailable.'}`); render();
+  feedback(`${existing >= 0 ? 'Updated' : 'Added'} ${word} with ${chunks.length} spelling tiles (${lessonLabel(state.singleTag)})${persisted ? '.' : ` for this session only.${saveMessage()}`}`); render();
 }
 function renderBulkPreview() {
   const root = $('#feedback'); root.replaceChildren(); root.style.display = pendingBulk.length ? 'block' : 'none';
@@ -176,7 +168,7 @@ function confirmBulk() {
   }
   state.currentChunks = [...pendingBulk[0].chunks]; state.soundMode = String(state.currentChunks.length); state.lessonMode = state.bulkTag;
   pendingBulk = []; $('#bulkWords').value = ''; $('#confirmBulk').hidden = true; const persisted = save();
-  feedback(`Tutor-confirmed and added ${added} ${added === 1 ? 'word' : 'words'}${updated ? `; updated ${updated}` : ''}${persisted ? '.' : ' for this session only; browser storage is unavailable.'}`); render();
+  feedback(`Tutor-confirmed and added ${added} ${added === 1 ? 'word' : 'words'}${updated ? `; updated ${updated}` : ''}${persisted ? '.' : ` for this session only.${saveMessage()}`}`); render();
 }
 function renderDictionary() {
   $('#dictionary').style.display = state.showDictionary ? 'block' : 'none'; $('#dictToggle').textContent = state.showDictionary ? 'Hide' : 'Show';
@@ -196,8 +188,8 @@ function renderDictionary() {
     root.append(group);
   }
 }
-function clearAll() { state.words = []; state.currentChunks = []; state.lastClicked = null; const persisted = save(); feedback(persisted ? 'Cleared all words from the dictionary.' : 'Cleared for this session, but browser storage is unavailable.'); render(); }
-function resetAll() { state.words = INITIAL_WORDS.map(item => ({ ...item, chunks: [...item.chunks] })); state.soundMode = '3'; state.lessonMode = 'current'; state.currentChunks = ['f','a','n']; state.singleTag = 'current'; state.bulkTag = 'current'; state.lastClicked = null; const persisted = save(); feedback(persisted ? 'Dictionary reset to the starter word list.' : 'Reset for this session, but browser storage is unavailable.'); render(); }
+function clearAll() { state.words = []; state.currentChunks = []; state.lastClicked = null; const persisted = save(); feedback(persisted ? 'Cleared all words from the dictionary.' : `Cleared for this session only.${saveMessage()}`); render(); }
+function resetAll() { state.words = BLENDING_BOARD_STARTER_WORDS.map(item => ({ ...item, chunks: [...item.chunks] })); state.soundMode = '3'; state.lessonMode = 'current'; state.currentChunks = ['f','a','n']; state.singleTag = 'current'; state.bulkTag = 'current'; state.lastClicked = null; const persisted = save(); feedback(persisted ? 'Dictionary reset to the starter word list.' : `Reset for this session only.${saveMessage()}`); render(); }
 function render() { renderFilters(); renderBoard(); renderTools(); renderDictionary(); }
 
 $('#nextBtn').addEventListener('click', nextWord); $('#randomBtn').addEventListener('click', randomWord); $('#startBtn').addEventListener('click', startList); $('#resetBtn').addEventListener('click', resetAll); $('#clearAll').addEventListener('click', clearAll);
@@ -205,10 +197,16 @@ $('#toolsToggle').addEventListener('click', () => { state.showTools = !state.sho
 $('#addSingle').addEventListener('click', addSingle); $('#addBulk').addEventListener('click', addBulk); $('#confirmBulk').addEventListener('click', confirmBulk);
 $('#singleWord').addEventListener('input', event => { event.target.value = clean(event.target.value).slice(0,12); confirmedSuggestion = ''; preview(); }); $('#soundSplit').addEventListener('input', preview); $('#singleWord').addEventListener('keydown', event => { if (event.key === 'Enter') addSingle(); });
 if (context) {
-  state.lessonMode = 'both'; state.soundMode = 'both';
+  state.lessonMode = 'both';
+  const requestedTileCount = context.settings.tileCount;
+  state.soundMode = Number.isInteger(requestedTileCount) && requestedTileCount >= 2 && requestedTileCount <= 6
+    ? String(requestedTileCount) : 'both';
   if (typeof context.settings.word === 'string') {
     const target = clean(context.settings.word); const item = state.words.find(entry => entry.word === target);
     if (item) state.currentChunks = [...item.chunks]; else feedback(`Lesson word “${target}” is not in this board's saved spelling tiles yet.`);
   }
 }
+if (loadedWords.error) feedback(loadedWords.error === 'invalid-data'
+  ? 'Saved Board words could not be read. Starter words are available, but existing saved data will not be overwritten.'
+  : 'Browser storage is unavailable. Starter words are available for this session.');
 ensureCurrent(); render();

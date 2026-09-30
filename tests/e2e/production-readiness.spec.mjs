@@ -25,7 +25,7 @@ test('production clean URLs preserve lesson completion and selected-list handoff
   await expect(page).toHaveURL(/\/activities\/sound-boxes$/);
   await expect(page.locator('#lessonToolbar').getByRole('button', { name: 'Finish step' })).toBeEnabled();
   await page.locator('#lessonToolbar').getByRole('button', { name: 'Finish step' }).click();
-  await expect(page).toHaveURL(/\/activities\/lesson-builder$/);
+  await expect(page).toHaveURL(/\/activities\/lesson-builder\?completed=[A-Za-z0-9_-]+$/);
   await page.goto('/activities/tutor-suggestions.html?concept=l1-short-vowels');
   await expect(page).toHaveURL(/\/activities\/tutor-suggestions\?concept=l1-short-vowels$/);
   await page.getByRole('button', { name: 'Use this set in Reading Words' }).click();
@@ -90,7 +90,7 @@ for (const [activity, settings, mark] of partialCases) {
     await page.reload();
     expect((await sessions(page))[0].id).toBe(id);
     await page.locator('#lessonToolbar').getByRole('button', { name: 'Finish step' }).click();
-    await expect(page).toHaveURL(/lesson-builder\.html$/);
+    await expect(page).toHaveURL(/lesson-builder\.html(?:\?completed=[A-Za-z0-9_-]+)?$/);
     records = await sessions(page);
     expect(records.filter(item => item.activity === activity)).toHaveLength(1);
     expect(records.filter(item => item.activity === 'lesson')).toHaveLength(1);
@@ -121,7 +121,7 @@ test('failed aggregate writes block lesson navigation and retained outcomes save
   await page.getByRole('button', { name: 'Retry saving outcomes' }).click();
   expect(await sessions(page)).toHaveLength(1);
   await page.locator('#lessonToolbar').getByRole('button', { name: 'Finish step' }).click();
-  await expect(page).toHaveURL(/lesson-builder\.html$/);
+  await expect(page).toHaveURL(/lesson-builder\.html(?:\?completed=[A-Za-z0-9_-]+)?$/);
   expect(await sessions(page)).toHaveLength(2);
 });
 
@@ -140,7 +140,7 @@ test('a failed active-lesson clear never duplicates its completion summary', asy
   const id = (await sessions(page))[0].id;
   await page.evaluate(() => { window.__clearBlocked = false; });
   await page.locator('#lessonToolbar').getByRole('button', { name: 'End lesson' }).click();
-  await expect(page).toHaveURL(/lesson-builder\.html$/);
+  await expect(page).toHaveURL(/lesson-builder\.html(?:\?completed=[A-Za-z0-9_-]+)?$/);
   const records = await sessions(page);
   expect(records).toHaveLength(1);
   expect(records[0].id).toBe(id);
@@ -187,3 +187,27 @@ test('ending a lesson preserves its context when the pinned learner is missing',
   expect(await page.evaluate(() => sessionStorage.getItem('bright-steps-active-lesson'))).not.toBeNull();
   expect(await sessions(page)).toHaveLength(0);
 });
+
+
+for (const activity of ['reading-words', 'paragraph-reading']) {
+  test(`${activity} never substitutes starter material for a missing planned list`, async ({ page }) => {
+    await seedLesson(page, activity, { listId: 'deleted-list' });
+    await expect(page.locator('#tutorStatus')).toContainText('not available');
+    await expect(page.getByRole('button', { name: 'Start reading' })).toBeDisabled();
+    await page.getByRole('link', { name: 'Review lesson plan' }).click();
+    await expect(page).toHaveURL(/lesson-builder\.html$/);
+    expect(await page.evaluate(() => sessionStorage.getItem('bright-steps-active-lesson'))).not.toBeNull();
+  });
+}
+
+for (const activity of ['reading-words', 'paragraph-reading']) {
+  test(`${activity} refuses an unreadable planned list even when its ID matches a starter`, async ({ page }) => {
+    await seedLesson(page, activity, { listId: 'list-1' });
+    const key = activity === 'reading-words' ? 'bright-steps-reading-word-lists' : 'bright-steps-paragraph-reading-lists';
+    await page.evaluate(key => localStorage.setItem(key, '{unreadable saved tutor material'), key);
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Start reading' })).toBeDisabled();
+    await expect(page.locator('#tutorStatus')).toContainText('not available');
+    expect(await page.evaluate(key => localStorage.getItem(key), key)).toBe('{unreadable saved tutor material');
+  });
+}

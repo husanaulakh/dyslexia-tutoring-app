@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { sortCategories, sortItems, silentEItems, syllableItems, syllableTypes, vcCvItems, workshopStrands } from '../../data/word-workshop.mjs';
 import {
   WORKSHOP_CUSTOM_KEY, checkSortAnswer, checkSyllableAnswer, checkVcCvAnswer,
-  createOutcomeCounts, getWorkshopItems, loadCustomVcCvItems,
+  createOutcomeCounts, getWorkshopItems, loadCustomVcCvCatalog, loadCustomVcCvItems, loadWordWorkshopCatalog,
   normalizeCustomVcCvItems, normalizeVcCvAnnotation, recordOutcome,
   saveCustomVcCvItems,
 } from '../../assets/js/word-workshop-logic.mjs';
@@ -57,9 +57,30 @@ test('custom tutor annotations are safe, bounded, and round-trip locally', () =>
   const saved = saveCustomVcCvItems([{ word: 'dentist', split: 'den/tist', note: 'middle consonants' }], storage);
   assert.equal(saved.ok, true);
   assert.deepEqual(loadCustomVcCvItems(storage), saved.items);
+  assert.equal(loadCustomVcCvCatalog(storage).error, null);
+  assert.deepEqual(loadWordWorkshopCatalog('vccv', storage).items.map(item => item.id).slice(-1), ['custom-dentist-3']);
   assert.equal(values.has(WORKSHOP_CUSTOM_KEY), true);
   assert.equal(saveCustomVcCvItems([{ word: 'unsafe', split: 'un/safe' }], { setItem() { throw new Error('blocked'); } }).ok, false);
   assert.deepEqual(loadCustomVcCvItems({ getItem() { throw new Error('blocked'); } }), []);
+});
+
+test('shared VC.CV catalog reports unreadable saved data and refuses to overwrite it', () => {
+  const values = new Map([[WORKSHOP_CUSTOM_KEY, '{broken annotations']]);
+  const storage = {
+    getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  const loaded = loadCustomVcCvCatalog(storage);
+  assert.equal(loaded.error, 'invalid-data');
+  assert.equal(loaded.raw, '{broken annotations');
+  assert.deepEqual(loaded.items, []);
+  const catalog = loadWordWorkshopCatalog('vccv', storage);
+  assert.equal(catalog.error, 'invalid-data');
+  assert.ok(catalog.items.some(item => item.id === 'napkin'));
+  const result = saveCustomVcCvItems([{ word: 'dentist', split: 'den/tist' }], storage, loaded);
+  assert.equal(result.ok, false);
+  assert.equal(result.error, 'invalid-data');
+  assert.equal(values.get(WORKSHOP_CUSTOM_KEY), '{broken annotations');
 });
 
 test('paper and screen item selection retain explicit annotated content without deriving splits', () => {

@@ -1,4 +1,5 @@
 import { silentEItems, sortCategories, sortItems, syllableItems, syllableTypes, vcCvItems } from '../../data/word-workshop.mjs';
+import { loadStoredCollection, saveStoredCollection } from './collection-storage.mjs';
 
 export const WORKSHOP_CUSTOM_KEY = 'bright-steps-word-workshop-v1';
 const VOWELS = new Set('aeiou');
@@ -44,21 +45,35 @@ export function normalizeCustomVcCvItems(value) {
 }
 
 export function loadCustomVcCvItems(storage) {
-  try {
-    const target = storage === undefined ? globalThis.localStorage : storage;
-    return normalizeCustomVcCvItems(JSON.parse(target?.getItem(WORKSHOP_CUSTOM_KEY) ?? '[]'));
-  }
-  catch { return []; }
+  return loadCustomVcCvCatalog(storage).items;
 }
 
-export function saveCustomVcCvItems(items, storage) {
+/** Load validated tutor annotations while retaining unreadable bytes for safe save decisions. */
+export function loadCustomVcCvCatalog(storage) {
+  return loadStoredCollection({
+    key: WORKSHOP_CUSTOM_KEY,
+    normalize: normalizeCustomVcCvItems,
+    fallback: [],
+    ...(storage === undefined ? {} : { storage }),
+  });
+}
+
+/** Catalog shared by the activity and lesson builder, including saved tutor annotations. */
+export function loadWordWorkshopCatalog(strand, storage) {
+  if (strand !== 'vccv') return { items: getWorkshopItems(strand), error: null, raw: null };
+  const saved = loadCustomVcCvCatalog(storage);
+  return { items: getWorkshopItems(strand, saved.items), error: saved.error, raw: saved.raw };
+}
+
+export function saveCustomVcCvItems(items, storage, loaded = loadCustomVcCvCatalog(storage)) {
   const normalized = normalizeCustomVcCvItems(items);
-  try {
-    const target = storage === undefined ? globalThis.localStorage : storage;
-    if (!target) return { ok: false, items: normalized };
-    target.setItem(WORKSHOP_CUSTOM_KEY, JSON.stringify(normalized));
-    return { ok: true, items: normalized };
-  } catch { return { ok: false, items: normalized }; }
+  const result = saveStoredCollection({
+    key: WORKSHOP_CUSTOM_KEY,
+    items: normalized,
+    loaded,
+    ...(storage === undefined ? {} : { storage }),
+  });
+  return { ok: result.ok, items: normalized, error: result.error, raw: result.raw };
 }
 
 export function getWorkshopItems(strand, customVcCv = []) {

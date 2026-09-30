@@ -123,6 +123,8 @@ export function saveLessonTemplates(templates, storage) {
   const target = storageOrNull(storage, 'localStorage');
   if (!target) return { ok: false, error: 'unavailable' };
   if (!Array.isArray(templates)) return { ok: false, error: 'invalid-data' };
+  const loaded = loadLessonTemplates(storage);
+  if (loaded.error) return { ok: false, error: loaded.error };
   const normalized = templates.slice(0, MAX_LESSON_TEMPLATES).map(normalizeLessonTemplate).filter(Boolean);
   try {
     target.setItem(LESSON_TEMPLATE_KEY, JSON.stringify(normalized));

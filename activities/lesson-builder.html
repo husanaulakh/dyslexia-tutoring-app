@@ -22,7 +22,18 @@
       <p>Choose a learner, connect practice to concepts, and arrange a short sequence. Templates stay in this browser.</p>
     </header>
 
+    <button class="btn secondary wizard-toggle" id="wizardToggle" type="button" aria-expanded="false" aria-controls="planningWizard">Use planning wizard</button>
+
+    <div id="planningWizard" class="planning-wizard" hidden>
+      <div class="wizard-progress" aria-label="Lesson planning progress">
+        <p id="wizardProgress" role="status" aria-live="polite">Step 1 of 4: Learner and plan</p>
+        <ol aria-label="Planning stages"><li data-wizard-indicator="0">Learner and plan</li><li data-wizard-indicator="1">Concepts</li><li data-wizard-indicator="2">Activities</li><li data-wizard-indicator="3">Review and start</li></ol>
+      </div>
+    </div>
+
+    <section id="wizardStage1" class="wizard-stage">
     <div id="studentTracker" class="tracker-host"></div>
+    <p id="activeLessonNotice" class="active-lesson-notice" hidden></p>
 
     <section class="panel" aria-labelledby="template-heading">
       <div class="section-heading"><div><h2 id="template-heading">Lesson template</h2><p>Save a reusable plan with a non-identifying learner label.</p></div></div>
@@ -30,14 +41,19 @@
         <div class="field"><label for="templateName">Template name</label><input id="templateName" maxlength="60" autocomplete="off" placeholder="For example, Short vowel review"></div>
         <div class="field"><label for="savedTemplates">Saved templates</label><select id="savedTemplates"><option value="">Choose a saved template</option></select></div>
         <button class="btn secondary" id="loadTemplate" type="button">Load template</button>
+        <button class="btn secondary" id="newPlan" type="button">New plan</button>
       </div>
     </section>
+    </section>
 
+    <section id="wizardStage2" class="wizard-stage">
     <section class="panel concepts-panel" aria-labelledby="concept-heading">
       <div class="section-heading"><div><h2 id="concept-heading">Concepts to practice</h2><p>Select scope concepts that fit today’s lesson.</p></div></div>
       <div id="conceptPicker" class="concept-picker"></div>
     </section>
+    </section>
 
+    <section id="wizardStage3" class="wizard-stage">
     <section class="panel add-step-panel" aria-labelledby="add-step-heading">
       <div class="section-heading"><div><h2 id="add-step-heading">Add a practice step</h2><p>Choose an activity and how the learner will respond.</p></div></div>
       <div class="step-builder">
@@ -45,8 +61,17 @@
         <div class="field"><label for="responseMode">Response mode</label><select id="responseMode"></select></div>
         <div class="field" id="presetField"><label for="activityPreset">Activity preset</label><select id="activityPreset"></select></div>
         <div class="field" id="wordListField" hidden><label for="wordList">Word/list selection</label><select id="wordList"></select><p class="hint">Choose a saved list. Leave the default selection unchanged to use the activity’s starter list.</p></div>
-        <div class="field item-picker-field" id="itemPickerField" hidden><label for="itemSelection">Activity item selection</label><select id="itemSelection" multiple size="5"></select><p class="hint">All items are selected by default. Select specific items to narrow this step.</p></div>
+        <a id="manageMaterialLink" class="manage-material-link" href="/activities/reading-words.html" hidden>Manage word lists</a>
+        <div class="field" id="tutorWordField" hidden><label for="tutorWord">Tutor-selected word</label><input id="tutorWord" maxlength="24" autocomplete="off" placeholder="e.g. bright"><p class="hint">The tutor may choose one word for Trace, Copy, Cover, Close.</p></div>
+        <div class="field" id="paragraphSettingsField" hidden><label for="questionMode">Comprehension prompts</label><select id="questionMode"><option value="oral">Show tutor prompts when present</option><option value="none">Hide prompts</option></select></div>
+        <div class="field" id="rereadField" hidden><label for="rereadMode">Paragraph rereading</label><select id="rereadMode"><option value="all">Reread all paragraphs</option><option value="needs-practice">Reread only paragraphs marked With help or Revisit</option></select></div>
+        <div class="field" id="missingCountField" hidden><label for="missingCount">Number of cards</label><input id="missingCount" type="number" min="1" max="24" value="10"></div>
+        <div class="field" id="missingPositionField" hidden><label for="missingPosition">Missing letter position</label><select id="missingPosition"><option value="random">Random position</option><option value="first">First letter</option><option value="middle">Middle letter</option><option value="last">Last letter</option></select></div>
+        <div class="field" id="boardTileCountField" hidden><label for="boardTileCount">Spelling tile count</label><select id="boardTileCount"><option value="0">Any tile count</option><option value="2">2 tiles</option><option value="3">3 tiles</option><option value="4">4 tiles</option><option value="5">5 tiles</option><option value="6">6 tiles</option></select></div>
+        <div class="field item-picker-field" id="itemPickerField" hidden><label for="itemSelection">Activity item selection</label><select id="itemSelection" multiple size="5"></select><p class="hint">All items are selected by default. Select specific items to narrow this step. If you deselect every item, choose at least one before adding the step.</p></div>
+        <p id="stepSettingsStatus" class="field-status" role="status" aria-live="polite"></p>
         <button class="btn primary add-step-button" id="addStep" type="button">Add step</button>
+        <button class="btn secondary" id="cancelStepEdit" type="button" hidden>Cancel edit</button>
       </div>
     </section>
 
@@ -55,15 +80,28 @@
       <ol id="lessonSteps" class="lesson-steps" aria-label="Ordered practice steps"></ol>
       <p id="emptySteps" class="empty-note">No steps yet. Add an activity above.</p>
     </section>
+    </section>
 
+    <section id="wizardStage4" class="wizard-stage">
+    <section class="panel review-panel" aria-labelledby="review-heading">
+      <div class="section-heading"><div><h2 id="review-heading">Review this lesson</h2><p>Check the learner, concepts, and ordered activities before you start.</p></div></div>
+      <div id="lessonReview" class="lesson-review" aria-live="polite"></div>
+    </section>
     <section class="lesson-actions" aria-label="Lesson actions">
-      <p id="builderStatus" class="builder-status" role="status" aria-live="polite"></p>
       <div class="action-buttons">
         <button class="btn secondary" id="saveTemplate" type="button">Save template</button>
+        <button class="btn secondary" id="saveAsNewTemplate" type="button">Save as new template</button>
         <button class="btn primary" id="startLesson" type="button">Start lesson</button>
         <button class="btn secondary" id="resumeLesson" type="button" hidden>Resume lesson</button>
       </div>
     </section>
+    </section>
+
+    <nav id="wizardNavigation" class="wizard-navigation" aria-label="Planning wizard controls" hidden>
+      <button class="btn secondary" id="wizardBack" type="button">Back</button>
+      <button class="btn primary" id="wizardContinue" type="button">Continue</button>
+    </nav>
+    <p id="builderStatus" class="builder-status" role="status" aria-live="polite"></p>
   </main>
   <script type="module" src="/assets/js/lesson-builder.js"></script>
   <script type="module" src="/assets/js/lesson-toolbar.js"></script>

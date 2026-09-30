@@ -87,3 +87,28 @@ test('Blending Board rejects hostile input and fits a narrow accessible viewport
   const dimensions = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
   expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.client);
 });
+
+test('Blending Board uses Builder word IDs and a validated lesson tile-count filter', async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('bright-steps-active-lesson', JSON.stringify({
+    version: 1, runId: 'run-board-filter', studentId: 'learner-1', index: 0, completedStepIds: [], startedAt: new Date().toISOString(),
+    template: { id: 'lesson-board-filter', name: 'Board filter', conceptIds: [], steps: [
+      { id: 'step-board', activityId: 'blending-board', responseMode: 'screen', settings: { wordIds: ['frog', 'fan'], tileCount: 4 } },
+    ] },
+  })));
+  await page.goto('/activities/blending-board.html');
+  await expect(page.locator('#currentWord')).toHaveText('frog');
+  await expect(page.locator('#modeBadge')).toContainText('4 spelling tiles');
+  await expect(page.locator('.card')).toHaveCount(4);
+});
+
+test('Blending Board does not overwrite malformed existing storage', async ({ page }) => {
+  const original = '{broken saved dictionary';
+  await page.addInitScript(value => localStorage.setItem('blending-board-words-standalone', value), original);
+  await page.goto('/activities/blending-board.html');
+  await expect(page.locator('#feedback')).toContainText('existing saved data will not be overwritten');
+  await page.getByLabel('Single word').fill('zap');
+  await page.getByLabel('Spelling tile split').fill('z a p');
+  await page.getByRole('button', { name: 'Add word' }).click();
+  await expect(page.locator('#dictionary')).toContainText('zap');
+  expect(await page.evaluate(() => localStorage.getItem('blending-board-words-standalone'))).toBe(original);
+});
