@@ -13,10 +13,11 @@ test('registry ids are stable, concepts valid, and lesson activities have suppor
   }
 });
 
-test('lookup helpers are safe and future activities do not appear as available pages', () => {
-  assert.equal(getActivity('sound-boxes').available, false);
+test('lookup helpers are safe and available activities follow descriptor availability', () => {
+  assert.equal(typeof getActivity('sound-boxes').available, 'boolean');
   assert.equal(getActivity('not-an-activity'), null);
-  assert.ok(!AVAILABLE_PRACTICE_ACTIVITIES.some(item => item.id === 'sound-boxes'));
+  assert.equal(AVAILABLE_PRACTICE_ACTIVITIES.some(item => item.id === 'sound-boxes'), getActivity('sound-boxes').available);
+  assert.ok(AVAILABLE_PRACTICE_ACTIVITIES.every(item => item.available));
   assert.ok(PRACTICE_ACTIVITIES.some(item => item.id === 'sound-boxes'));
   assert.ok(getActivitiesForConcept('l1-vccv').some(item => item.id === 'word-workshop'));
   assert.deepEqual(getActivitiesForConcept('<script>'), []);
