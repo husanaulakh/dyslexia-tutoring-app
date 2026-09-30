@@ -116,7 +116,7 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
       select.append(option);
     }
     const pinnedId = activeLesson?.studentId;
-    const selected = pinnedId && data.students.some(student => student.id === pinnedId) ? pinnedId : data.students.some(student => student.id === previous)
+    const selected = pinnedId ? (data.students.some(student => student.id === pinnedId) ? pinnedId : '') : data.students.some(student => student.id === previous)
       ? previous
       : data.selectedStudentId;
     select.value = selected;
@@ -167,7 +167,7 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
       if (activeLesson) {
         const { data } = loadStudentData();
         const pinned = data.students.find(student => student.id === activeLesson.studentId);
-        if (pinned) return { ...pinned };
+        return pinned ? { ...pinned } : null;
       }
       return getSelectedStudent();
     },

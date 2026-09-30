@@ -64,3 +64,16 @@ test('step movement rejects invalid ids, storage failures return errors, and nav
   assert.equal(saveLessonTemplates([template], new BrokenStorage()).error, 'unavailable');
   assert.equal(endLesson(new BrokenStorage()).error, 'unavailable');
 });
+
+
+test('duplicate step IDs normalize uniquely and unknown active versions cannot resume', () => {
+  const clean = normalizeLessonTemplate({ ...template, steps: [
+    { id: 'step-2', activityId: 'reading-words', responseMode: 'screen' },
+    { id: 'step-2', activityId: 'reading-words', responseMode: 'screen' },
+    { id: 'step-2-1', activityId: 'reading-words', responseMode: 'screen' },
+  ] });
+  assert.equal(new Set(clean.steps.map(step => step.id)).size, 3);
+  const session = new MemoryStorage();
+  session.setItem(ACTIVE_LESSON_KEY, JSON.stringify({ version: 99, template, studentId: 'student-1', index: 0 }));
+  assert.equal(loadActiveLesson(session).active, null);
+});

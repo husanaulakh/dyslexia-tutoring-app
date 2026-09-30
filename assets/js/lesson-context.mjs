@@ -82,7 +82,12 @@ export function normalizeLessonTemplate(value, index = 0) {
   if (!steps.length) return null;
   const ids = new Set();
   for (const step of steps) {
-    if (ids.has(step.id)) step.id = `step-${steps.indexOf(step) + 1}`;
+    if (ids.has(step.id)) {
+      const base = `step-${steps.indexOf(step) + 1}`;
+      let suffix = 1;
+      step.id = base;
+      while (ids.has(step.id)) step.id = `${base}-${suffix++}`;
+    }
     ids.add(step.id);
   }
   return {
@@ -120,6 +125,7 @@ export function saveLessonTemplates(templates, storage) {
 
 function normalizeActive(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  if (value.version !== 1) return null;
   const template = normalizeLessonTemplate(value.template);
   const studentId = safeId(value.studentId, '');
   const index = Number.isInteger(value.index) ? value.index : -1;

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8faf5">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="Build and run a tutor-led Bright Steps practice lesson.">
+  <title>Lesson Builder | Bright Steps</title>
+  <link rel="stylesheet" href="/assets/css/lesson-builder.css">
+  <link rel="stylesheet" href="/assets/css/student-tracker.css">
+  <link rel="stylesheet" href="/assets/css/activity-tools.css">
+  <link rel="stylesheet" href="/assets/css/theme.css">
+</head>
+<body>
+  <main class="lesson-shell">
+    <nav class="page-nav" aria-label="Page navigation"><a href="/">← Bright Steps</a></nav>
+    <header class="lesson-header">
+      <div class="eyebrow">Tutor planning</div>
+      <h1>Lesson Builder</h1>
+      <p>Choose a learner, connect practice to concepts, and arrange a short sequence. Templates stay in this browser.</p>
+    </header>
+
+    <div id="studentTracker" class="tracker-host"></div>
+
+    <section class="panel" aria-labelledby="template-heading">
+      <div class="section-heading"><div><h2 id="template-heading">Lesson template</h2><p>Save a reusable plan with a non-identifying learner label.</p></div></div>
+      <div class="template-controls">
+        <div class="field"><label for="templateName">Template name</label><input id="templateName" maxlength="60" autocomplete="off" placeholder="For example, Short vowel review"></div>
+        <div class="field"><label for="savedTemplates">Saved templates</label><select id="savedTemplates"><option value="">Choose a saved template</option></select></div>
+        <button class="btn secondary" id="loadTemplate" type="button">Load template</button>
+      </div>
+    </section>
+
+    <section class="panel concepts-panel" aria-labelledby="concept-heading">
+      <div class="section-heading"><div><h2 id="concept-heading">Concepts to practice</h2><p>Select scope concepts that fit today’s lesson.</p></div></div>
+      <div id="conceptPicker" class="concept-picker"></div>
+    </section>
+
+    <section class="panel add-step-panel" aria-labelledby="add-step-heading">
+      <div class="section-heading"><div><h2 id="add-step-heading">Add a practice step</h2><p>Choose an activity and how the learner will respond.</p></div></div>
+      <div class="step-builder">
+        <div class="field"><label for="activitySelect">Practice activity</label><select id="activitySelect"></select></div>
+        <div class="field"><label for="responseMode">Response mode</label><select id="responseMode"></select></div>
+        <div class="field" id="presetField"><label for="activityPreset">Activity preset</label><select id="activityPreset"></select></div>
+        <div class="field" id="wordListField" hidden><label for="wordList">Word/list selection</label><select id="wordList"></select><p class="hint">Choose a saved list. Leave the default selection unchanged to use the activity’s starter list.</p></div>
+        <div class="field item-picker-field" id="itemPickerField" hidden><label for="itemSelection">Activity item selection</label><select id="itemSelection" multiple size="5"></select><p class="hint">All items are selected by default. Select specific items to narrow this step.</p></div>
+        <button class="btn primary add-step-button" id="addStep" type="button">Add step</button>
+      </div>
+    </section>
+
+    <section class="panel sequence-panel" aria-labelledby="sequence-heading">
+      <div class="section-heading"><div><h2 id="sequence-heading">Practice sequence</h2><p>Use the buttons to change the order. Activities open one at a time.</p></div></div>
+      <ol id="lessonSteps" class="lesson-steps" aria-label="Ordered practice steps"></ol>
+      <p id="emptySteps" class="empty-note">No steps yet. Add an activity above.</p>
+    </section>
+
+    <section class="lesson-actions" aria-label="Lesson actions">
+      <p id="builderStatus" class="builder-status" role="status" aria-live="polite"></p>
+      <div class="action-buttons">
+        <button class="btn secondary" id="saveTemplate" type="button">Save template</button>
+        <button class="btn primary" id="startLesson" type="button">Start lesson</button>
+        <button class="btn secondary" id="resumeLesson" type="button" hidden>Resume lesson</button>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="/assets/js/lesson-builder.js"></script>
+  <script type="module" src="/assets/js/lesson-toolbar.js"></script>
+</body>
+</html>

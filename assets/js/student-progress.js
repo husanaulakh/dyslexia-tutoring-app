@@ -1,5 +1,6 @@
 import { ASSESSMENT_LEVELS, ASSESSMENT_ITEMS } from '../../data/assessment-scope-sequence.mjs';
 import { getStudentAssessmentProgress, setStudentAssessmentStatus } from './student-progress-store.mjs';
+import { getActivitiesForConcept } from '../../data/activity-registry.mjs';
 import { mountStudentTracker } from './student-tracker.js';
 
 const trackerRoot = document.querySelector('#studentTracker');
@@ -39,6 +40,13 @@ function createAssessmentItem(item, record, disabled, student) {
   copy.append(create('h4', 'item-title', item.title));
   copy.append(create('p', 'item-detail', item.detail));
   if (record) copy.append(create('span', 'item-updated', formatDate(record.updatedAt)));
+  const links = create('div', 'practice-links');
+  for (const activity of getActivitiesForConcept(item.id).filter(activity => activity.available)) {
+    const link = create('a', '', `Practise: ${activity.label}`);
+    link.href = activity.path;
+    links.append(link, document.createTextNode(' · '));
+  }
+  copy.append(links);
 
   const label = create('label', 'item-status-label', 'Assessment status');
   const select = create('select', 'item-status');
