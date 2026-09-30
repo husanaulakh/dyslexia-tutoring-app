@@ -6,6 +6,7 @@ import {
   recordStudentSession,
   setSelectedStudent,
 } from './student-progress-store.mjs';
+import { loadActiveLesson, getLessonActivityContext } from './lesson-context.mjs';
 
 let nextMountId = 0;
 
@@ -71,7 +72,7 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
   section.append(selectLabel);
 
   const form = make('form', 'student-tracker__form');
-  const nameLabel = make('label', 'student-tracker__label', 'Add a student (first name or initials)');
+  const nameLabel = make('label', 'student-tracker__label', 'Learner label (initials or code)');
   const nameInput = make('input', 'student-tracker__input');
   nameInput.type = 'text';
   nameInput.name = 'studentName';
@@ -86,7 +87,7 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
   section.append(form);
 
   const privacy = make('p', 'student-tracker__privacy',
-    'Saved on this device in this browser only; it is not synced. Use a first name or initials. Anyone with access to this browser profile may be able to see it.');
+    'Saved on this device in this browser only; it is not synced. Use initials or a non-identifying learner code. Anyone with access to this browser profile may be able to see it.');
   privacy.id = `student-tracker-privacy-${mountId}`;
   section.append(privacy);
 
@@ -103,6 +104,7 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
 
   function refresh() {
     const { data, error } = loadStudentData();
+    const activeLesson = loadActiveLesson().active;
     const previous = select.value;
     select.replaceChildren();
     const prompt = make('option', '', data.students.length ? 'Choose a student' : 'Add a student to begin');
@@ -113,11 +115,14 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
       option.value = student.id;
       select.append(option);
     }
-    const selected = data.students.some(student => student.id === previous)
+    const pinnedId = activeLesson?.studentId;
+    const selected = pinnedId && data.students.some(student => student.id === pinnedId) ? pinnedId : data.students.some(student => student.id === previous)
       ? previous
       : data.selectedStudentId;
     select.value = selected;
-    select.disabled = data.students.length === 0;
+    select.disabled = data.students.length === 0 || Boolean(pinnedId);
+    nameInput.disabled = Boolean(pinnedId);
+    addButton.disabled = Boolean(pinnedId);
     history.replaceChildren(makeSessionList(selected ? getRecentStudentSessions(selected) : []));
     if (error) statusMessage(section, 'Browser storage is unavailable. Student history may not be saved.', true);
     else if (!status.textContent) statusMessage(section, activityLabel ? `Ready for ${activityLabel}.` : '');
@@ -125,6 +130,7 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
   }
 
   select.addEventListener('change', () => {
+    if (loadActiveLesson().active) { refresh(); return; }
     if (!setSelectedStudent(select.value)) {
       statusMessage(section, 'Could not save the selected student in browser storage.', true);
       refresh();
@@ -137,6 +143,7 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
 
   form.addEventListener('submit', event => {
     event.preventDefault();
+    if (loadActiveLesson().active) { refresh(); statusMessage(section, 'End the active lesson before changing its learner.', true); return; }
     const result = addStudentProfile(nameInput.value);
     if (!result.ok) {
       const message = result.error === 'invalid-name' ? 'Enter a name or initials using letters, numbers, spaces, apostrophes, or hyphens.'
@@ -155,9 +162,24 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
   refresh();
   return {
     refresh,
-    getSelectedStudent,
+    getSelectedStudent() {
+      const activeLesson = loadActiveLesson().active;
+      if (activeLesson) {
+        const { data } = loadStudentData();
+        const pinned = data.students.find(student => student.id === activeLesson.studentId);
+        if (pinned) return { ...pinned };
+      }
+      return getSelectedStudent();
+    },
     recordSession(summary) {
-      const result = recordStudentSession(summary);
+      const activeLesson = loadActiveLesson().active;
+      const lessonContext = getLessonActivityContext(summary?.activity);
+      const pinnedStudent = activeLesson?.studentId;
+      const result = recordStudentSession({
+        ...summary,
+        ...(pinnedStudent ? { studentId: pinnedStudent } : {}),
+        ...(lessonContext ? { conceptIds: lessonContext.conceptIds } : {}),
+      });
       if (!result.ok) {
         statusMessage(section,
           result.error === 'no-student' ? 'Add or select a student before saving this session.' : 'Could not save this session in browser storage.',

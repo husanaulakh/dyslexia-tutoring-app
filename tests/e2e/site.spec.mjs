@@ -169,9 +169,9 @@ test('visual drill cards flip, filter, and navigate with keyboard', async ({ pag
 test('Reading Words reviews only missed words, spaces their retry, and saves per-student history', async ({ page }) => {
   await page.goto('/activities/reading-words.html');
   await expect(page.getByLabel('Words in this list')).toHaveValue(/tap.*duck.*rub.*bog/s);
-  await page.getByLabel('Add a student (first name or initials)').fill('Alex');
+  await page.getByLabel('Learner label (initials or code)').fill('Alex');
   await page.getByRole('button', { name: 'Add student' }).click();
-  await page.getByLabel('Add a student (first name or initials)').fill('Jamie');
+  await page.getByLabel('Learner label (initials or code)').fill('Jamie');
   await page.getByRole('button', { name: 'Add student' }).click();
   await page.getByLabel('Current student').selectOption({ label: 'Alex' });
   await page.getByRole('button', { name: 'Add a list' }).click();
@@ -210,7 +210,7 @@ test('Reading Words reviews only missed words, spaces their retry, and saves per
 
 test('Paragraph Reading supports tutor lists, spaced review, and saved student sessions', async ({ page }) => {
   await page.goto('/activities/paragraph-reading.html');
-  await page.getByLabel('Add a student (first name or initials)').fill('Riley');
+  await page.getByLabel('Learner label (initials or code)').fill('Riley');
   await page.getByRole('button', { name: 'Add student' }).click();
   await page.getByRole('button', { name: 'Add a list' }).click();
   await page.getByLabel('List name').fill('Short passages');
@@ -239,9 +239,9 @@ test('Paragraph Reading supports tutor lists, spaced review, and saved student s
 test('Student Scope & Sequence saves assessment statuses separately per student across reloads', async ({ page }) => {
   await page.goto('/activities/student-progress.html');
   await expect(page.getByRole('heading', { name: 'Student Scope & Sequence' })).toBeVisible();
-  await page.getByLabel('Add a student (first name or initials)').fill('Sam');
+  await page.getByLabel('Learner label (initials or code)').fill('Sam');
   await page.getByRole('button', { name: 'Add student' }).click();
-  await page.getByLabel('Add a student (first name or initials)').fill('Ari');
+  await page.getByLabel('Learner label (initials or code)').fill('Ari');
   await page.getByRole('button', { name: 'Add student' }).click();
   await page.getByLabel('Current student').selectOption({ label: 'Sam' });
   await page.locator('.level-group').nth(1).locator('summary').click();

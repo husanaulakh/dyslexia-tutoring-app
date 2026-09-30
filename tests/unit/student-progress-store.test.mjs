@@ -62,7 +62,7 @@ test('version 1 student data migrates without losing session history', () => {
     selectedStudentId: 's1',
     sessions: [{ id: 'h1', studentId: 's1', activity: 'reading-words', completedItems: 2, totalItems: 3 }],
   });
-  assert.equal(migrated.schemaVersion, 2);
+  assert.equal(migrated.schemaVersion, 3);
   assert.equal(migrated.students[0].name, 'Maya');
   assert.equal(migrated.sessions.length, 1);
   assert.deepEqual(migrated.assessment, []);
@@ -77,6 +77,20 @@ test('loadStudentData persists the migrated versioned schema under a stable key'
   assert.equal(result.data.selectedStudentId, 'a');
   assert.equal(JSON.parse(storage.getItem(STUDENT_STORAGE_KEY)).schemaVersion, STUDENT_SCHEMA_VERSION);
   assert.equal(loadStudentData(new BrokenStorage()).error, 'unavailable');
+});
+
+test('version 2 sessions migrate to schema 3 and retain only validated concepts and aggregate outcomes', () => {
+  const migrated = migrateStudentData({
+    schemaVersion: 2,
+    students: [{ id: 's1', name: 'S1' }], selectedStudentId: 's1',
+    sessions: [{ id: 'h1', studentId: 's1', activity: 'sound-boxes', completedItems: 2, totalItems: 3,
+      conceptIds: ['l1-short-vowels', '<script>'], outcomeCounts: { independent: 1, supported: 1, revisit: 0 }, responseText: 'private work' }],
+  });
+  assert.equal(migrated.schemaVersion, 3);
+  assert.deepEqual(migrated.sessions[0].conceptIds, ['l1-short-vowels']);
+  assert.deepEqual(migrated.sessions[0].outcomeCounts, { independent: 1, supported: 1, revisit: 0 });
+  assert.equal('responseText' in migrated.sessions[0], false);
+  assert.equal(migrateStudentData({ schemaVersion: 2, students: [{ id: 's1', name: 'S1' }], sessions: [{ id: 'h1', studentId: 's1', activity: 'x', completedItems: 3, totalItems: 3, outcomeCounts: { independent: 2, supported: 2, revisit: 0 } }] }).sessions.length, 0);
 });
 
 test('names and profiles are normalized and reject markup and unsupported values', () => {

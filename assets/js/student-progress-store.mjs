@@ -12,7 +12,7 @@ import { ASSESSMENT_ITEM_IDS } from '../../data/assessment-scope-sequence.mjs';
 // Keep the storage key stable as schemaVersion changes; migrations read the
 // versioned payload in place across app deployments.
 export const STUDENT_STORAGE_KEY = 'bright-steps-student-progress';
-export const STUDENT_SCHEMA_VERSION = 2;
+export const STUDENT_SCHEMA_VERSION = 3;
 export const MAX_STUDENTS = 30;
 export const MAX_SESSIONS = 500;
 export const MAX_SESSIONS_PER_STUDENT = 100;
@@ -92,6 +92,19 @@ function normalizeSession(record, students, index) {
     ? new Date(completedAtCandidate).toISOString()
     : new Date(0).toISOString();
   const session = { id, studentId, activity, listLabel, completedItems, totalItems, completedAt };
+  if (Array.isArray(record.conceptIds)) {
+    session.conceptIds = [...new Set(record.conceptIds.filter(id => typeof id === 'string' && ASSESSMENT_ITEM_IDS.has(id)))].slice(0, 100);
+  }
+  if (record.outcomeCounts && typeof record.outcomeCounts === 'object' && !Array.isArray(record.outcomeCounts)) {
+    const counts = {};
+    for (const name of ['independent', 'supported', 'revisit']) {
+      const count = normalizeCount(record.outcomeCounts[name]);
+      if (count === null) return null;
+      counts[name] = Math.min(count, totalItems);
+    }
+    if (counts.independent + counts.supported + counts.revisit > totalItems) return null;
+    session.outcomeCounts = counts;
+  }
   if (Number.isFinite(record.accuracy) && record.accuracy >= 0 && record.accuracy <= 100) {
     session.accuracy = Math.round(record.accuracy * 10) / 10;
   }
@@ -131,7 +144,7 @@ function uniqueById(records) {
 export function migrateStudentData(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return DEFAULT_DATA();
   const version = value.schemaVersion ?? value.version ?? 0;
-  if (version !== 0 && version !== 1 && version !== STUDENT_SCHEMA_VERSION) return DEFAULT_DATA();
+  if (version !== 0 && version !== 1 && version !== 2 && version !== STUDENT_SCHEMA_VERSION) return DEFAULT_DATA();
 
   const rawStudents = Array.isArray(value.students) ? value.students : Array.isArray(value.profiles) ? value.profiles : [];
   const students = uniqueById(rawStudents.slice(0, MAX_STUDENTS)
