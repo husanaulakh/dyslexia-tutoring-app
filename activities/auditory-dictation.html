@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8faf5">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="Tutor-spoken sound and word dictation with explicit accepted spellings.">
+  <title>Auditory Dictation | Bright Steps</title>
+  <link rel="stylesheet" href="/assets/css/activity-tools.css">
+  <link rel="stylesheet" href="/assets/css/student-tracker.css">
+  <link rel="stylesheet" href="/assets/css/auditory-dictation.css">
+  <link rel="stylesheet" href="/assets/css/theme.css">
+</head>
+<body>
+  <main class="dictation-shell">
+    <div id="lessonToolbar"></div>
+    <nav class="nav" aria-label="Activity navigation"><a href="../">← Bright Steps</a></nav>
+    <header class="intro"><div><div class="eyebrow">Tutor-led listening and spelling</div><h1>Auditory Dictation</h1><p>The tutor says a sound or word. The learner writes on paper or types a response. The tutor reveals the model and confirms the outcome.</p></div><div class="dictation-art" aria-hidden="true">✎</div></header>
+    <div id="studentTracker" class="tracker-host"></div>
+    <section id="setupPanel" class="panel tutor-tools" data-tutor-tools aria-labelledby="setupTitle">
+      <div class="section-heading"><div><h2 id="setupTitle">Set up dictation</h2><p>Prompts and accepted spellings are explicit; no answer is inferred from word length.</p></div></div>
+      <div class="form-grid"><div class="field"><label for="itemMode">Practice set</label><select id="itemMode"><option value="all">Sounds and words</option><option value="sounds">Sounds</option><option value="words">Words</option></select></div><div class="field"><label for="responseMode">Response mode</label><select id="responseMode"><option value="screen">Type response</option><option value="paper">Paper response</option></select></div></div>
+      <p id="setupError" class="status error" role="status" aria-live="polite"></p>
+      <div class="actions"><button class="btn primary" id="startPractice" type="button">Start dictation</button></div>
+    </section>
+    <section id="practicePanel" class="panel practice" data-reading-content hidden aria-labelledby="practiceTitle">
+      <div class="practice-top"><span id="progressText" class="badge"></span><button id="endPractice" class="text-button" type="button">End practice</button></div>
+      <h2 id="practiceTitle">Listen carefully</h2>
+      <p id="itemKind" class="item-kind"></p>
+      <p id="tutorInstruction" class="hint">Tutor: say the sound or word aloud. The prompt is hidden from the learner’s view.</p>
+      <div class="tutor-prompt-tools" data-tutor-tools><p><strong>Tutor prompt:</strong> this is a shared screen; showing the prompt displays it to everyone.</p><button id="showPrompt" class="btn secondary" type="button">Show tutor prompt</button></div>
+      <p id="prompt" class="prompt" hidden></p>
+      <div id="typedResponse" class="field response-field" hidden><label for="response">Learner response</label><input id="response" type="text" maxlength="30" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="responseHelp"><p id="responseHelp" class="hint">The response stays in this page and is cleared before the next item.</p></div>
+      <p id="paperHelp" class="paper-help" hidden>Use paper or a whiteboard for the response. No learner response is saved here.</p>
+      <div class="actions"><button id="revealAnswer" class="btn primary" type="button">Reveal accepted spelling</button></div>
+      <div id="revealedAnswer" class="revealed-answer" aria-live="polite" hidden><span>Accepted spelling(s)</span><strong id="answerSpellings"></strong></div>
+      <fieldset id="outcomeChoices" class="outcomes" hidden><legend>Tutor-confirmed outcome</legend><p>How did the learner respond?</p><div class="outcome-buttons"><button type="button" class="btn outcome" data-outcome="independent">Independent</button><button type="button" class="btn outcome" data-outcome="supported">With help</button><button type="button" class="btn outcome" data-outcome="revisit">Revisit</button></div></fieldset>
+      <div class="actions"><button id="nextItem" class="btn primary" type="button" disabled>Finish item and continue</button></div>
+      <p id="practiceStatus" class="status" role="status" aria-live="polite"></p>
+    </section>
+    <section id="donePanel" class="panel done" hidden aria-labelledby="doneTitle"><div class="eyebrow">Dictation complete</div><h2 id="doneTitle">Listening work finished</h2><p id="doneSummary"></p><p id="saveNotice" class="status" role="status" aria-live="polite"></p><button id="retrySave" class="btn secondary" type="button" hidden>Retry saving session</button><button id="again" class="btn primary" type="button">Set up another practice</button></section>
+  </main>
+  <script type="module" src="/assets/js/lesson-toolbar.js"></script>
+  <script type="module" src="/assets/js/auditory-dictation.js"></script>
+</body>
+</html>
