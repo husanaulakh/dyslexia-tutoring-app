@@ -13,28 +13,28 @@
 <main class="wrap">
 <nav aria-label="Activity navigation"><a class="home-link" href="../" aria-label="Back to Bright Steps activities">← Bright Steps</a></nav>
 <header class="panel"><div class="header">
-<div><div class="eyebrow">Blending board</div><h1>Click, change, blend.</h1><div class="sub">Each card is one sound or letter. The tutor clicks a card to change it, and the student blends the word.</div></div>
+<div><div class="eyebrow">Blending board</div><h1>Click, change, blend.</h1><div class="sub">Each tile shows one spelling chunk. A chunk can be one or more letters; tile count is not the same as phoneme count.</div></div>
 <div class="filters"><div class="row" id="soundFilters"></div><div class="row" id="lessonFilters"></div></div>
 </div></header>
 
 <div class="layout">
-<section class="panel board" aria-label="Sound blending board">
+<section class="panel board" aria-label="Spelling tile blending board">
 <div class="topline"><div><div class="label">Current blend</div><div class="current" id="currentWord">fan</div></div><div class="mode" id="modeBadge"></div></div>
 <div class="stage" id="stage"></div>
-<div class="prompt" id="prompt" style="display:none"><div class="label" style="color:#c2410c">Tutor prompt</div><div style="margin-top:8px;font-weight:800">Click any card to change that sound. Student says each sound, then blends:<strong id="promptText"></strong></div></div>
+<div class="prompt" id="prompt" style="display:none"><div class="label" style="color:#c2410c">Tutor prompt</div><div style="margin-top:8px;font-weight:800">Click a spelling tile to change that part. Student reads the tiles, then blends:<strong id="promptText"></strong></div></div>
 <div class="actions"><button class="btn primary" id="nextBtn">Next word</button><button class="btn orange" id="randomBtn">Random</button><button class="btn soft" id="startBtn">Start list</button><button class="btn" id="resetBtn">Reset all</button></div>
 </section>
 
 <aside>
 <section class="panel">
-<div class="section-head"><div><div class="section-title">Tutor tools</div><div class="small">Add 3 to 4 sound blending words.</div></div><button class="toggle" id="toolsToggle">Hide</button></div>
+<div class="section-head"><div><div class="section-title">Tutor tools</div><div class="small">Add words with 2–6 spelling tiles.</div></div><button class="toggle" id="toolsToggle" type="button">Hide</button></div>
 <div class="tools" id="toolsBody">
-<div class="control" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff7ed;border-radius:14px;padding:11px 12px"><div><div style="font-weight:900">Tutor prompt panel</div><div class="small">Show or hide the prompt under the board.</div></div><button class="toggle" id="promptToggle">Show</button></div>
-<div class="control"><label for="singleWord">Single word</label><div class="input-row"><input id="singleWord" placeholder="e.g. ship" maxlength="12" autocomplete="off" autocapitalize="none" spellcheck="false"><button class="add" id="addSingle">+</button></div></div>
-<div class="control"><label for="soundSplit">Sound split</label><input id="soundSplit" placeholder="e.g. sh i p"><div class="small" style="margin-top:6px">Use spaces for sounds. Example: ship = sh i p. Stop = s t o p.</div><div class="preview" id="preview" style="display:none;margin-top:8px"></div></div>
+<div class="control" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff7ed;border-radius:14px;padding:11px 12px"><div><div style="font-weight:900">Tutor prompt panel</div><div class="small">Show or hide the prompt under the board.</div></div><button class="toggle" id="promptToggle" type="button">Show</button></div>
+<div class="control"><label for="singleWord">Single word</label><div class="input-row"><input id="singleWord" placeholder="e.g. ship" maxlength="12" autocomplete="off" autocapitalize="none" spellcheck="false"><button class="add" id="addSingle" type="button" aria-label="Add word">+</button></div></div>
+<div class="control"><label for="soundSplit">Spelling tile split</label><input id="soundSplit" placeholder="e.g. sh i p" autocomplete="off" autocapitalize="none" spellcheck="false"><div class="small" style="margin-top:6px">Use one or more letters per tile, separated by spaces. Example: ship = sh · i · p. These are spelling chunks, not a phoneme count.</div><div class="preview" id="preview" style="display:none;margin-top:8px"></div></div>
 <div class="control"><label>Single word lesson tag</label><div class="seg" id="singleTagSeg"></div></div>
-<div class="control"><label for="bulkWords">Bulk add</label><textarea id="bulkWords" placeholder="Paste words like: spin, whip, bat, pan"></textarea><div class="small" style="margin-top:6px">Comma separated, space separated, or new lines all work.</div></div>
-<div class="control"><label>Bulk add lesson tag</label><div class="seg" id="bulkTagSeg"></div><div class="small" style="margin-top:6px">Default is This lesson. Switch to Review before adding older lesson words.</div><button class="btn orange" id="addBulk" style="width:100%;margin-top:9px">Add bulk words</button></div>
+<div class="control"><label for="bulkWords">Bulk add</label><textarea id="bulkWords" placeholder="Paste words like: spin, whip, bat, pan"></textarea><div class="small" style="margin-top:6px">Suggested spelling tile splits will be shown and need tutor confirmation before they are saved.</div></div>
+<div class="control"><label>Bulk add lesson tag</label><div class="seg" id="bulkTagSeg"></div><div class="small" style="margin-top:6px">Default is This lesson. Switch to Review before adding older lesson words.</div><button class="btn orange" id="addBulk" type="button" style="width:100%;margin-top:9px">Review bulk suggestions</button><button class="btn soft" id="confirmBulk" type="button" hidden style="width:100%;margin-top:9px">Confirm suggested splits and add words</button></div>
 <div class="feedback" id="feedback" style="display:none"></div>
 </div></section>
 

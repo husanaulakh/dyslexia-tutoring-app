@@ -82,15 +82,16 @@ test('blending board changes only a matching sound and accepts longer spellings'
   const changed = await page.locator('#currentWord').textContent();
   expect(changed.slice(1)).toBe(firstChanged.slice(1));
   await page.getByLabel('Single word').fill('black');
-  await page.getByLabel('Sound split').fill('b l a ck');
+  await page.getByLabel('Spelling tile split').fill('b l a ck');
   await page.locator('#addSingle').click();
   await expect(page.locator('#currentWord')).toHaveText('black');
   await expect(page.locator('#dictionary')).toContainText('black');
   await page.locator('.card[data-p="0"]').click();
   await expect(page.locator('#currentWord')).toHaveText('black');
-  await expect(page.locator('#feedback')).toContainText('No word in this list changes only this sound');
+  await expect(page.locator('#feedback')).toContainText('No word in this list changes only this spelling tile');
   await page.getByLabel('Bulk add').fill('think');
   await page.locator('#addBulk').click();
+  await page.getByRole('button', { name: 'Confirm suggested splits and add words' }).click();
   await expect(page.locator('#dictionary')).toContainText('think');
   await page.reload();
   await expect(page.locator('#dictionary')).toContainText('think');

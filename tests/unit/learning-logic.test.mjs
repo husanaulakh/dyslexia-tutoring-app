@@ -12,23 +12,30 @@ test('word input normalization removes non-letters and lowercases', () => {
   assert.deepEqual(autoChunkWord('black'), ['b', 'l', 'a', 'ck']);
 });
 
-test('sound split accepts matching 3–4 sound chunks and falls back safely', () => {
+test('spelling tile split accepts matching 2–6 chunks and reports invalid manual splits', () => {
   assert.deepEqual(parseSoundSplit('b l a ck', 'black'), ['b', 'l', 'a', 'ck']);
   assert.deepEqual(parseSoundSplit('sh i p', 'ship'), ['sh', 'i', 'p']);
-  assert.deepEqual(parseSoundSplit('wrong', 'ship'), ['sh', 'i', 'p']);
+  assert.deepEqual(parseSoundSplit('a t', 'at'), ['a', 't']);
+  assert.deepEqual(parseSoundSplit('s c r u n ch', 'scrunch'), ['s', 'c', 'r', 'u', 'n', 'ch']);
+  assert.equal(parseSoundSplit('wrong', 'ship'), null);
+  assert.equal(parseSoundSplit('s c r u n c h x', 'scrunch'), null);
+  assert.deepEqual(parseSoundSplit('', 'ship'), ['sh', 'i', 'p']);
 });
 
-test('bulk word parsing deduplicates and accepts longer spellings for 3–4 sound words', () => {
-  assert.deepEqual(tokenizeBulkWords('black think BLACK a xylophone'), ['black', 'think', 'xylophone']);
+test('bulk word parsing deduplicates and accepts two-letter through longer spellings', () => {
+  assert.deepEqual(tokenizeBulkWords('at black think BLACK a xylophone'), ['at', 'black', 'think', 'xylophone']);
   assert.deepEqual(autoChunkWord('think'), ['th', 'i', 'n', 'k']);
 });
 
-test('stored words are strictly normalized and unsafe values cannot become markup', () => {
+test('stored 2–6 tile words are strictly normalized and unsafe values cannot become markup', () => {
   assert.deepEqual(normalizeStoredWord({ word: 'SHIP', chunks: ['sh', 'i', 'p'], lessonTag: 'previous' }), {
     word: 'ship', chunks: ['sh', 'i', 'p'], lessonTag: 'previous',
   });
   assert.equal(normalizeStoredWord({ word: '<img src=x onerror=alert(1)>', chunks: ['img', 'src', 'x', 'onerror'] }), null);
+  assert.equal(normalizeStoredWord({ word: 'ship', chunks: ['<sh', 'i', 'p>'] }), null);
   assert.equal(normalizeStoredWord({ word: 'ship', chunks: ['sh', 'i'] }), null);
+  assert.deepEqual(normalizeStoredWord({ word: 'at', chunks: ['a', 't'] }), { word: 'at', chunks: ['a', 't'], lessonTag: 'current' });
+  assert.equal(normalizeStoredWord({ word: 'scrunch', chunks: ['s','c','r','u','n','c','h'] }), null);
   assert.equal(normalizeStoredWord(['ship']), null);
 });
 

@@ -22,26 +22,26 @@ export function autoChunkWord(word) {
 
 export function parseSoundSplit(raw, word) {
   const clean = cleanWord(word);
-  const split = String(raw ?? '').toLowerCase().replace(/[^a-z\s,-]/g, '').trim();
+  const split = String(raw ?? '').normalize('NFKC').trim().toLowerCase();
   if (!split) return autoChunkWord(clean);
+  if (!/^[a-z]+(?:[\s,-]+[a-z]+)*$/.test(split)) return null;
   const chunks = split.split(/[\s,-]+/).filter(Boolean);
-  return chunks.join('') === clean && chunks.length >= 3 && chunks.length <= 4
-    ? chunks
-    : autoChunkWord(clean);
+  return chunks.join('') === clean && chunks.length >= 2 && chunks.length <= 6 ? chunks : null;
 }
 
 export function tokenizeBulkWords(raw) {
   return [...new Set((String(raw ?? '').match(/[a-zA-Z]+/g) ?? [])
     .map(cleanWord)
-    .filter(word => word.length >= 3 && word.length <= 12))];
+    .filter(word => word.length >= 2 && word.length <= 12))];
 }
 
 export function normalizeStoredWord(record) {
   if (!record || typeof record !== 'object' || Array.isArray(record)) return null;
   if (typeof record.word !== 'string' || !Array.isArray(record.chunks)) return null;
+  if (!/^[a-z]{2,12}$/i.test(record.word) || record.chunks.some(chunk => typeof chunk !== 'string' || !/^[a-z]+$/i.test(chunk))) return null;
   const word = cleanWord(record.word);
   const chunks = record.chunks.map(cleanWord);
-  if (word.length < 3 || word.length > 12 || chunks.length < 3 || chunks.length > 4) return null;
+  if (word.length < 2 || word.length > 12 || chunks.length < 2 || chunks.length > 6) return null;
   if (chunks.some(chunk => !chunk) || chunks.join('') !== word) return null;
   return { word, chunks, lessonTag: record.lessonTag === 'previous' ? 'previous' : 'current' };
 }
