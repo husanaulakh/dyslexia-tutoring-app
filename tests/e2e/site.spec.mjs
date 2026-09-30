@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const activities = [
+  ['/activities/tutor-suggestions.html', 'Tutor Suggestions'],
   ['/activities/word-workshop.html', 'Word Workshop'],
   ['/activities/auditory-dictation.html', 'Auditory Dictation'],
   ['/activities/sound-boxes.html', 'Sound Boxes'],

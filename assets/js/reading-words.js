@@ -1,5 +1,5 @@
 import { mountStudentTracker } from './student-tracker.js';
-import { getLessonActivityContext } from './lesson-context.mjs';
+import { getLessonActivityContext, loadActiveLesson } from './lesson-context.mjs';
 import {
   advanceReviewQueue, buildReviewQueue, createReadingOutcomeCounts,
   normalizeReadingOutcome, normalizeWordLists, parseReadingWords, recordReadingOutcome,
@@ -32,6 +32,13 @@ const state = {
   outcomeCounts: createReadingOutcomeCounts(), retryOutcomeCounts: createReadingOutcomeCounts(), selectedOutcome: '',
 };
 state.selectedId = state.lists[0].id;
+// A tutor suggestion can select an existing saved list without replacing a lesson.
+const suggestedListId = new URLSearchParams(location.search).get('list');
+const activeLessonState = loadActiveLesson();
+if (!activeLessonState.error && !activeLessonState.active && state.lists.some(list => list.id === suggestedListId)) {
+  state.selectedId = suggestedListId;
+}
+
 
 if (lessonContext?.settings?.listId && state.lists.some(list => list.id === lessonContext.settings.listId)) {
   state.selectedId = lessonContext.settings.listId;

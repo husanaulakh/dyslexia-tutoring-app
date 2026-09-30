@@ -1,6 +1,7 @@
 import { ASSESSMENT_LEVELS, ASSESSMENT_ITEMS } from '../../data/assessment-scope-sequence.mjs';
 import { getStudentAssessmentProgress, setStudentAssessmentStatus } from './student-progress-store.mjs';
 import { getActivitiesForConcept } from '../../data/activity-registry.mjs';
+import { getSuggestionsForConcept } from './tutor-suggestions-logic.mjs';
 import { mountStudentTracker } from './student-tracker.js';
 
 const trackerRoot = document.querySelector('#studentTracker');
@@ -44,6 +45,11 @@ function createAssessmentItem(item, record, disabled, student) {
   for (const activity of getActivitiesForConcept(item.id).filter(activity => activity.available)) {
     const link = create('a', '', `Practise: ${activity.label}`);
     link.href = activity.path;
+    links.append(link, document.createTextNode(' · '));
+  }
+  if (getSuggestionsForConcept(item.id).length > 0) {
+    const link = create('a', '', 'Word suggestions');
+    link.href = `/activities/tutor-suggestions.html?concept=${encodeURIComponent(item.id)}`;
     links.append(link, document.createTextNode(' · '));
   }
   copy.append(links);

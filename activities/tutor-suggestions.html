@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8faf5">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="Tutor-selected, pattern-based word-set ideas for reading practice.">
+  <title>Tutor Suggestions | Bright Steps</title>
+  <link rel="stylesheet" href="/assets/css/tutor-suggestions.css">
+  <link rel="stylesheet" href="/assets/css/presentation.css">
+  <link rel="stylesheet" href="/assets/css/activity-tools.css">
+  <link rel="stylesheet" href="/assets/css/theme.css">
+</head>
+<body>
+  <main class="suggestions-shell">
+    <nav class="page-nav" aria-label="Page navigation"><a href="/">← Bright Steps</a></nav>
+    <header class="page-header">
+      <div class="eyebrow">Tutor planning</div>
+      <h1>Tutor Suggestions</h1>
+      <p>Choose a word pattern you have observed and get a ready-to-use practice set. These are ideas for practice, not diagnosis or automatic assessment.</p>
+    </header>
+
+    <section class="panel picker-panel" data-tutor-tools aria-labelledby="picker-heading">
+      <h2 id="picker-heading">What would you like to practice?</h2>
+      <div class="field">
+        <label for="suggestionSelect">Observed skill or pattern</label>
+        <select id="suggestionSelect"><option value="">Choose a pattern</option></select>
+      </div>
+    </section>
+
+    <section class="panel suggestion-panel" id="suggestionPanel" aria-labelledby="suggestionTitle" hidden>
+      <div class="eyebrow" id="suggestionLevel"></div>
+      <h2 id="suggestionTitle" data-reading-content></h2>
+      <p class="observation"><strong>If you notice:</strong> <span id="suggestionObservation"></span></p>
+      <div class="reminder"><h3>Pattern reminder</h3><p id="suggestionReminder" data-reading-content></p></div>
+      <div class="concept-row"><h3>Related scope concept</h3><p id="suggestionConcept"></p></div>
+      <section aria-labelledby="words-heading">
+        <h3 id="words-heading">Practice words</h3>
+        <ul id="suggestionWords" class="word-list" data-reading-content></ul>
+      </section>
+      <p class="adapt-note">Use words the learner has been taught. Adjust the set to match the current lesson and the learner’s response.</p>
+      <div class="actions" data-tutor-tools>
+        <button id="useSet" class="btn primary" type="button" disabled>Use this set in Reading Words</button>
+        <p id="activeLessonNote" class="active-note" role="status" aria-live="polite" hidden>End the active lesson to start this set. You can use these words in a later lesson.</p>
+      </div>
+    </section>
+
+    <p id="suggestionStatus" class="status" role="status" aria-live="polite"></p>
+  </main>
+  <script type="module" src="/assets/js/tutor-suggestions.js"></script>
+  <script type="module" src="/assets/js/lesson-toolbar.js"></script>
+  <script type="module" src="/assets/js/presentation.js"></script>
+</body>
+</html>
