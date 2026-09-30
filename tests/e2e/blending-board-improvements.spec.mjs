@@ -67,6 +67,7 @@ test('Blending Board suggested bulk tiles require one visible tutor confirmation
   await page.getByRole('button', { name: /Spelling tile 1:/ }).focus();
   await page.keyboard.press('Space');
   await expect(page.locator('#currentWord')).not.toHaveText(before);
+  await expect(page.getByRole('button', { name: /Spelling tile 1:/ })).toBeFocused();
 });
 
 test('Blending Board rejects hostile input and fits a narrow accessible viewport', async ({ page }) => {

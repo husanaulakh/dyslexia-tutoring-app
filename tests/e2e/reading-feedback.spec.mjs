@@ -124,7 +124,6 @@ test('partial session storage failures are reported after leaving either activit
   await page.goto('/activities/reading-words.html');
   await addLearner(page);
   await page.getByRole('button', { name: 'Start reading' }).click();
-  await page.getByRole('button', { name: 'Revisit' }).click();
   await page.evaluate(() => {
     const original = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
@@ -132,14 +131,13 @@ test('partial session storage failures are reported after leaving either activit
       return original.call(this, key, value);
     };
   });
+  await page.getByRole('button', { name: 'Revisit' }).click();
   await page.getByRole('button', { name: 'Back to tutor lists' }).click();
   await expect(page.locator('#tutorStatus')).toContainText('could not be saved in browser storage');
 
   await page.goto('/activities/paragraph-reading.html');
   await addLearner(page, 'CD');
   await page.getByRole('button', { name: 'Start reading' }).click();
-  await page.getByRole('button', { name: 'Independent' }).click();
-  await page.getByRole('button', { name: 'Finish paragraph' }).click();
   await page.evaluate(() => {
     const original = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
@@ -147,8 +145,31 @@ test('partial session storage failures are reported after leaving either activit
       return original.call(this, key, value);
     };
   });
+  await page.getByRole('button', { name: 'Independent' }).click();
+  await page.getByRole('button', { name: 'Finish paragraph' }).click();
   await page.getByRole('button', { name: 'Back to tutor lists' }).click();
   await expect(page.locator('#tutorStatus')).toContainText('could not be saved in browser storage');
+});
+
+test('unreadable saved list data stays untouched and new lists are reported as session-only', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('bright-steps-reading-word-lists', '{broken word lists');
+    localStorage.setItem('bright-steps-paragraph-reading-lists', '{broken paragraph lists');
+  });
+
+  await page.goto('/activities/reading-words.html');
+  await expect(page.locator('#tutorStatus')).toContainText('could not be read');
+  await page.getByRole('button', { name: 'Save list' }).click();
+  await expect(page.locator('#tutorStatus')).toContainText('Stored word-list data is unreadable');
+  await page.getByRole('button', { name: 'Add a list' }).click();
+  await expect(page.locator('#tutorStatus')).toContainText('Added List 2 for this session only');
+  expect(await page.evaluate(() => localStorage.getItem('bright-steps-reading-word-lists'))).toBe('{broken word lists');
+
+  await page.goto('/activities/paragraph-reading.html');
+  await expect(page.locator('#tutorStatus')).toContainText('could not be read');
+  await page.getByRole('button', { name: 'Add a list' }).click();
+  await expect(page.locator('#tutorStatus')).toContainText('Added Paragraphs 2 for this session only');
+  expect(await page.evaluate(() => localStorage.getItem('bright-steps-paragraph-reading-lists'))).toBe('{broken paragraph lists');
 });
 
 test('reading feedback pages fit a narrow viewport without horizontal overflow', async ({ page }) => {

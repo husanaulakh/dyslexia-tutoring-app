@@ -84,15 +84,18 @@ $('#useSet').addEventListener('click', () => {
   const lesson = loadActiveLesson();
   if (lesson.error) { refreshUseButton(); setStatus('Lesson storage is unavailable. Try again when it is available.', true); return; }
   if (lesson.active) { refreshUseButton(); return; }
+  const useButton = $('#useSet');
+  useButton.disabled = true;
   const result = saveSuggestionAsReadingList(select.value);
   if (!result.ok) {
-    const message = result.error === 'limit' ? 'Reading Words already has the maximum of 12 lists. Remove a list before adding this set.'
-      : result.error === 'invalid-storage' ? 'The saved Reading Words lists could not be read safely, so nothing was changed.'
+    refreshUseButton();
+    const message = result.error === 'limit' ? 'This browser already has 12 Reading Words lists, so no additional suggestion can be added.'
+      : result.error === 'invalid-storage' || result.error === 'changed-storage' ? 'The saved Reading Words lists could not be read safely or changed while this page was open, so nothing was overwritten.'
         : result.error === 'unknown-suggestion' ? 'Choose a word set before continuing.'
           : 'Browser storage is unavailable. The word set was not added.';
     setStatus(message, true);
     return;
   }
-  setStatus('Word set saved. Opening Reading Words.');
+  setStatus(result.reused ? 'This unchanged word set is already saved. Opening Reading Words.' : 'Word set saved. Opening Reading Words.');
   window.location.assign(`/activities/reading-words.html?list=${encodeURIComponent(result.list.id)}`);
 });

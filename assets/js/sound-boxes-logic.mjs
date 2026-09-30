@@ -18,7 +18,10 @@ export function normalizeSoundBoxItem(value) {
 }
 
 export function parseAnnotatedWords(raw) {
-  const lines = String(raw ?? '').split(/\r?\n/).slice(0, 40);
+  const lines = String(raw ?? '').split(/\r?\n/);
+  if (lines.filter(line => line.trim()).length > 40) {
+    return { items: [], errors: ['Enter no more than 40 annotated words at a time.'] };
+  }
   const items = [];
   const errors = [];
   lines.forEach((line, index) => {
@@ -41,8 +44,4 @@ export function selectSoundBoxItems(settings = {}, all = soundBoxWords) {
   return selected.slice(0, max).map(item => ({ ...item, phonemes: [...item.phonemes], conceptIds: [...item.conceptIds] }));
 }
 
-export function normalizeOutcome(value) {
-  return ['independent', 'supported', 'revisit'].includes(value) ? value : '';
-}
-
-export function emptyOutcomeCounts() { return { independent: 0, supported: 0, revisit: 0 }; }
+export { normalizeOutcome, createOutcomeCounts as emptyOutcomeCounts } from './practice-outcomes.mjs';

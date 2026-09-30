@@ -28,6 +28,29 @@ test('a concept link opens a tutor suggestion and adds its word set to Reading W
   await expect(page.getByRole('button', { name: 'Start reading' })).toBeVisible();
 });
 
+test('rapid repeated use reuses an unchanged saved set instead of filling Reading Words with duplicates', async ({ page }) => {
+  await page.goto('/activities/tutor-suggestions.html?concept=l1-short-vowels');
+  await page.locator('#useSet').evaluate(button => { button.click(); button.click(); });
+  await expect(page).toHaveURL(/\/activities\/reading-words\.html\?list=suggested-short-vowels-[a-z0-9]+$/);
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('bright-steps-reading-word-lists')));
+  expect(stored).toHaveLength(1);
+  expect(stored[0].words).toEqual(['cat', 'bed', 'sit', 'hop', 'cup', 'map', 'red', 'fin', 'hot', 'sun']);
+});
+
+test('an exact saved suggestion opens at the list cap without changing the stored lists', async ({ page }) => {
+  await page.addInitScript(() => {
+    const words = ['cat', 'bed', 'sit', 'hop', 'cup', 'map', 'red', 'fin', 'hot', 'sun'];
+    const lists = Array.from({ length: 11 }, (_, index) => ({ id: `tutor-${index}`, name: `Tutor ${index}`, words: ['tap'] }));
+    lists.push({ id: 'suggested-short-vowels-existing', name: 'Suggested: Short vowel sounds', words });
+    localStorage.setItem('bright-steps-reading-word-lists', JSON.stringify(lists));
+  });
+  await page.goto('/activities/tutor-suggestions.html?concept=l1-short-vowels');
+  const before = await page.evaluate(() => localStorage.getItem('bright-steps-reading-word-lists'));
+  await page.getByRole('button', { name: 'Use this set in Reading Words' }).click();
+  await expect(page).toHaveURL('/activities/reading-words.html?list=suggested-short-vowels-existing');
+  expect(await page.evaluate(() => localStorage.getItem('bright-steps-reading-word-lists'))).toBe(before);
+});
+
 test('active lesson disables set handoff and leaves Reading Words lists untouched', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('bright-steps-reading-word-lists', JSON.stringify([{ id: 'list-1', name: 'Existing', words: ['tap'] }]));

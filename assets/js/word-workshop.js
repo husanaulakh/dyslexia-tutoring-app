@@ -1,3 +1,4 @@
+import { createPracticeSession } from './practice-session.mjs';
 import { mountStudentTracker } from './student-tracker.js';
 import { getLessonActivityContext } from './lesson-context.mjs';
 import {
@@ -52,6 +53,7 @@ function renderStrandFromContext() {
 }
 
 function beginPractice() {
+  if (!session.flush()) return;
   const student = tracker.getSelectedStudent();
   if (!student) { setSetupStatus('Add or select a learner label before starting.', true); return; }
   const strand = lessonContext?.settings?.workshop && Object.hasOwn(labels, lessonContext.settings.workshop)
@@ -69,6 +71,7 @@ function beginPractice() {
     strand, mode, items, index: 0, completed: 0, outcomeCounts: createOutcomeCounts(), studentId: student.id,
     startedAt: Date.now(), selectedOutcome: '', selectedChoice: '', response: '', responseChecked: false, saved: false,
   };
+  session.reset();
   $('#studentTracker').hidden = true;
   setup.hidden = true;
   done.hidden = true;
@@ -219,13 +222,14 @@ function nextItem() {
   state.outcomeCounts = recordOutcome(state.outcomeCounts, state.selectedOutcome);
   state.completed += 1;
   state.index += 1;
+  saveSession();
   renderItem();
 }
 
-function saveSession() {
-  if (state.saved) return true;
-  if (state.completed < 1 || !state.studentId) return false;
-  const result = tracker.recordSession({
+const session = createPracticeSession({
+  record: value => tracker.recordSession(value),
+  onRecovery: () => tracker.refresh(),
+  summary: () => ({
     studentId: state.studentId,
     activity: 'word-workshop',
     conceptIds: lessonContext?.conceptIds ?? [],
@@ -234,11 +238,13 @@ function saveSession() {
     totalItems: state.items.length,
     outcomeCounts: state.outcomeCounts,
     durationSeconds: Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)),
-  });
-  state.saved = Boolean(result.ok);
+  }),
+});
+session.bind(window);
+function saveSession() {
+  state.saved = session.save();
   return state.saved;
 }
-
 function completePractice() {
   const saved = saveSession();
   practice.hidden = true;

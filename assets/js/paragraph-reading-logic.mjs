@@ -92,16 +92,4 @@ export function advanceParagraphReviewQueue(queue, outcome = 'revisit', rereadMo
   return remaining;
 }
 
-export function normalizeParagraphOutcome(value) {
-  return ['independent', 'supported', 'revisit'].includes(value) ? value : '';
-}
-
-export function createParagraphOutcomeCounts() {
-  return { independent: 0, supported: 0, revisit: 0 };
-}
-
-export function recordParagraphOutcome(counts, value) {
-  const outcome = normalizeParagraphOutcome(value);
-  if (!outcome || !counts || !Number.isInteger(counts[outcome]) || counts[outcome] < 0) return counts;
-  return { ...counts, [outcome]: counts[outcome] + 1 };
-}
+export { normalizeOutcome as normalizeParagraphOutcome, createOutcomeCounts as createParagraphOutcomeCounts, recordOutcome as recordParagraphOutcome } from './practice-outcomes.mjs';

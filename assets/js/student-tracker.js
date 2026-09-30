@@ -107,7 +107,8 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
 
   function refresh() {
     const { data, error } = loadStudentData();
-    const activeLesson = loadActiveLesson().active;
+    const lessonState = loadActiveLesson();
+    const activeLesson = lessonState.active;
     const previous = select.value;
     select.replaceChildren();
     const prompt = make('option', '', data.students.length ? 'Choose a student' : 'Add a student to begin');
@@ -123,11 +124,12 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
       ? previous
       : data.selectedStudentId;
     select.value = selected;
-    select.disabled = data.students.length === 0 || Boolean(pinnedId);
-    nameInput.disabled = Boolean(pinnedId);
-    addButton.disabled = Boolean(pinnedId);
+    select.disabled = data.students.length === 0 || Boolean(pinnedId) || Boolean(error) || Boolean(lessonState.error);
+    nameInput.disabled = Boolean(pinnedId) || Boolean(error) || Boolean(lessonState.error);
+    addButton.disabled = Boolean(pinnedId) || Boolean(error) || Boolean(lessonState.error);
     history.replaceChildren(makeSessionList(selected ? getRecentStudentSessions(selected) : []));
-    if (error) statusMessage(section, 'Browser storage is unavailable. Student history may not be saved.', true);
+    if (error) statusMessage(section, error === 'future-version' ? 'This learner store needs a newer app version. Saved data has been preserved.' : 'Saved learner data could not be read. It has been preserved; no changes can be saved.', true);
+    else if (lessonState.error) statusMessage(section, 'Lesson state could not be read. Restore browser storage before continuing.', true);
     else if (!status.textContent) statusMessage(section, activityLabel ? `Ready for ${activityLabel}.` : '');
     return getSelectedStudent();
   }
@@ -166,7 +168,9 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
   return {
     refresh,
     getSelectedStudent() {
-      const activeLesson = loadActiveLesson().active;
+      const lessonState = loadActiveLesson();
+      if (lessonState.error) return null;
+      const activeLesson = lessonState.active;
       if (activeLesson) {
         const { data } = loadStudentData();
         const pinned = data.students.find(student => student.id === activeLesson.studentId);
@@ -175,7 +179,13 @@ export function mountStudentTracker(container, { activityLabel = '', onStudentCh
       return getSelectedStudent();
     },
     recordSession(summary) {
-      const activeLesson = loadActiveLesson().active;
+      const lessonState = loadActiveLesson();
+      if (lessonState.error) return { ok: false, error: 'lesson-storage' };
+      const activeLesson = lessonState.active;
+      if (activeLesson && summary?.studentId && summary.studentId !== activeLesson.studentId) {
+        statusMessage(section, 'This result belongs to a different learner. It was not reassigned.', true);
+        return { ok: false, error: 'learner-mismatch' };
+      }
       const lessonContext = getLessonActivityContext(summary?.activity);
       const pinnedStudent = activeLesson?.studentId;
       const result = recordStudentSession({

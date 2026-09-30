@@ -1,3 +1,5 @@
+import { createOutcomeCounts as createVisualDrillOutcomeCounts } from './practice-outcomes.mjs';
+export { createVisualDrillOutcomeCounts };
 const OUTCOMES = new Set(['independent', 'supported', 'revisit']);
 
 export function filterVisualDrillCards(cards, stage = 'all', group = 'all') {
@@ -27,10 +29,6 @@ export function getLessonDrillSelection(cards, settings = {}) {
     : filterVisualDrillCards(cards, 'all', typeof settings.preset === 'string' ? settings.preset : 'all');
   const count = Number.isInteger(settings.count) && settings.count > 0 ? settings.count : 0;
   return count ? selected.slice(0, Math.min(count, 100)) : selected;
-}
-
-export function createVisualDrillOutcomeCounts() {
-  return { independent: 0, supported: 0, revisit: 0 };
 }
 
 /** The first tutor-marked outcome for a card is immutable within this practice. */

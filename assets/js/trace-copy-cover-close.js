@@ -1,3 +1,4 @@
+import { createPracticeSession } from './practice-session.mjs';
 import { normalizePracticeWord, isSpellingMatch, traceableLetters } from './learning-logic.mjs';
 import { mountStudentTracker } from './student-tracker.js';
 import { getLessonActivityContext } from './lesson-context.mjs';
@@ -17,8 +18,14 @@ import { getLessonActivityContext } from './lesson-context.mjs';
   const state = {
     word: '', responseMode: context?.responseMode ?? 'screen', studentId: '', step: 0, spoken: false,
     trace: 0, animating: null, copyValue: '', coverValue: '', coverChecked: false,
-    coverCorrected: false, closeSpoken: false, sessionSaved: false,
+    completed: false, coverCorrected: false, coverAttempts: 0, coverCanContinue: false, closeSpoken: false, sessionSaved: false,
   };
+  const session = createPracticeSession({
+    record: value => tracker.recordSession(value),
+    onRecovery: () => tracker.refresh(),
+    summary: () => ({ studentId: state.studentId, conceptIds: context?.conceptIds ?? [], activity: 'trace-copy-cover-close', listLabel: 'Word practice', completedItems: state.completed ? 1 : 0, totalItems: 1 }),
+  });
+  session.bind(window);
   const letters = () => traceableLetters(state.word);
   const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   const esc = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
@@ -30,16 +37,20 @@ import { getLessonActivityContext } from './lesson-context.mjs';
   }
 
   function resetWord(word) {
+    session.reset();
+    state.completed = false;
     clearTraceTimer();
     state.word = word;
     state.studentId = context?.studentId ?? tracker.getSelectedStudent()?.id ?? '';
     state.step = 0; state.spoken = false; state.trace = 0; state.animating = null;
     state.copyValue = ''; state.coverValue = ''; state.coverChecked = false;
-    state.coverCorrected = false; state.closeSpoken = false; state.sessionSaved = false;
+    state.coverCorrected = false; state.coverAttempts = 0; state.coverCanContinue = false;
+    state.closeSpoken = false; state.sessionSaved = false;
     render();
   }
 
   function setup() {
+    if (!session.flush()) return;
     clearTraceTimer();
     document.getElementById('newWord').hidden = true;
     const suggested = context?.settings.word ?? '';
@@ -77,7 +88,7 @@ import { getLessonActivityContext } from './lesson-context.mjs';
 
   function traceRow() {
     const total = letters().length;
-    return `<p>Say the word, then say each letter as you follow it. Click the orange dot to draw the next letter.</p><div class="trace-word" aria-label="Animated letter tracing">${traceGlyphs()}</div><div class="trace-controls">${state.trace < total ? `<button class="dot-action" type="button" data-action="trace" ${state.spoken && state.animating === null ? '' : 'disabled'}><span class="dot" aria-hidden="true">•</span><span>${state.animating !== null ? 'Drawing letter…' : `Draw letter ${state.trace + 1}`}</span></button>` : `<span class="counter">All ${total} letters traced</span>`}<span class="counter">${Math.min(state.trace,total)} / ${total} letters</span></div>${!state.spoken ? '<p class="copy-help">Confirm the spoken word above to begin.</p>' : ''}${state.trace >= total ? '<button class="btn primary finish-word" type="button" data-action="next">Continue to Copy →</button>' : ''}`;
+    return `<p>Say the word, then say each letter as you follow it. Click the orange dot to draw the next letter.</p><div class="trace-word" aria-label="Animated letter tracing">${traceGlyphs()}</div><div class="trace-controls" role="group" aria-label="Trace controls" tabindex="-1">${state.trace < total ? `<button class="dot-action" type="button" data-action="trace" ${state.spoken && state.animating === null ? '' : 'disabled'}><span class="dot" aria-hidden="true">•</span><span>${state.animating !== null ? 'Drawing letter…' : `Draw letter ${state.trace + 1}`}</span></button>` : `<span class="counter">All ${total} letters traced</span>`}<span class="counter" aria-live="polite">${Math.min(state.trace,total)} / ${total} letters</span></div>${!state.spoken ? '<p class="copy-help">Confirm the spoken word above to begin.</p>' : ''}${state.trace >= total ? '<button class="btn primary finish-word" type="button" data-action="next">Continue to Copy →</button>' : ''}`;
   }
 
   function copyRow() {
@@ -91,7 +102,10 @@ import { getLessonActivityContext } from './lesson-context.mjs';
     if (state.responseMode === 'paper') {
       return `<p>Cover the model. The learner spells the word from memory on paper or a whiteboard.</p><div class="hidden-reminder">The model is covered. Try spelling it without looking.</div><button class="btn primary" type="button" data-action="confirm-cover">Tutor confirms spelling from memory on paper</button><p class="copy-help">The tutor confirms the attempt. No paper response is stored.</p>`;
     }
-    return `<p>Hide the model and say each letter while spelling the word from memory.</p><div class="hidden-reminder">The model is covered. Try spelling it without looking.</div><form data-form="cover"><div class="copy-line"><input class="memory-input" id="coverInput" aria-label="Spell the covered word" autocomplete="off" autocapitalize="none" spellcheck="false" value="${esc(state.coverValue)}" placeholder="Spell it from memory"><button class="btn primary" type="submit">${state.coverChecked ? 'Check again' : 'Check spelling'}</button></div></form>${state.coverChecked && !state.coverCorrected ? `<p class="feedback correction" role="status">Compare with the model: <strong>${esc(state.word)}</strong>. Study it, cover it again, and try the whole word once more.</p><button class="btn" type="button" data-action="retry-cover">Try again from memory</button>` : ''}${state.coverCorrected ? '<p class="feedback good" role="status">Corrected and spelled accurately. Ready for Close.</p>' : ''}<p class="copy-help">If the spelling needs a fix, uncover the model, study the correct form, cover it again, and retry.</p>`;
+    if (state.coverCanContinue) {
+      return `<p>Hide the model and say each letter while spelling the word from memory.</p><div class="hidden-reminder">The model is covered. Try spelling it without looking.</div><p class="feedback correction" role="status">The one retry is complete. The tutor can continue with this result.</p><button class="btn primary" type="button" data-action="continue-cover">Tutor confirms continue to Close</button>`;
+    }
+    return `<p>Hide the model and say each letter while spelling the word from memory.</p><div class="hidden-reminder">The model is covered. Try spelling it without looking.</div><form data-form="cover"><div class="copy-line"><input class="memory-input" id="coverInput" aria-label="Spell the covered word" autocomplete="off" autocapitalize="none" spellcheck="false" value="${esc(state.coverValue)}" placeholder="Spell it from memory"><button class="btn primary" type="submit">${state.coverChecked ? 'Check retry' : 'Check spelling'}</button></div></form>${state.coverChecked && !state.coverCorrected ? `<p class="feedback correction" role="status">Compare with the model: <strong>${esc(state.word)}</strong>. Study it, cover it again, and try the whole word once more.</p><button class="btn" type="button" data-action="retry-cover">Try again from memory</button>` : ''}${state.coverCorrected ? '<p class="feedback good" role="status">Spelled accurately. Ready for Close.</p>' : ''}<p class="copy-help">If the spelling needs a fix, uncover the model, study the correct form, cover it again, and retry.</p>`;
   }
 
   function closeRow() {
@@ -109,52 +123,55 @@ import { getLessonActivityContext } from './lesson-context.mjs';
     return `<section class="step-row ${status}" aria-current="${index === state.step ? 'step' : 'false'}"><div class="step-aside"><span class="step-number">${index < state.step ? '✓' : index + 1}</span><div><div class="step-title">${steps[index][0]}</div><div class="step-sub">${steps[index][1]}</div></div></div><div class="step-content">${body || `<p>${summary}</p>`}</div></section>`;
   }
 
-  function render() {
+  function render(focusSelector = null) {
     document.getElementById('newWord').hidden = false;
     const progress = Math.round(state.step / 4 * 100);
     app.innerHTML = `<div class="progress-wrap"><span class="progress-label">Step ${Math.min(state.step + 1,4)} of 4</span><div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="${state.step}"><span style="width:${progress}%"></span></div></div>${wordBanner()}${state.step === 0 ? spokenCheck() : ''}<div class="steps">${steps.map((_, index) => stepRow(index)).join('')}</div>`;
     bind();
+    if (focusSelector) app.querySelector(focusSelector)?.focus({ preventScroll: true });
   }
 
-  function saveCompletion() {
-    if (state.sessionSaved || !state.studentId) return state.sessionSaved;
-    const result = tracker.recordSession({
-      studentId: state.studentId, activity: 'trace-copy-cover-close', listLabel: 'Word practice',
-      completedItems: 1, totalItems: 1,
-    });
-    state.sessionSaved = Boolean(result.ok);
-    return state.sessionSaved;
-  }
+  function saveCompletion() { state.sessionSaved = session.save(); return state.sessionSaved; }
 
   function completeWord() {
+    state.completed = true;
     clearTraceTimer();
     const saved = saveCompletion();
-    app.innerHTML = `<section class="card setup completion" style="text-align:center"><div style="font-size:50px;margin:0 0 12px" aria-hidden="true">✦</div><div class="eyebrow">Word practice complete</div><h2 style="margin:9px 0">Practice finished</h2><p>Nice work. The learner traced, copied, recalled, and said the word aloud with tutor feedback.</p><p class="session-status" role="status">${!state.studentId ? 'No learner was selected; this practice is not in a learner history.' : saved ? 'Session saved on this device.' : 'The session could not be saved. Use the tutor tracker above to try again.'}</p><button class="btn primary" type="button" id="again">Practise another word</button></section>`;
+    app.innerHTML = `<section class="card setup completion" style="text-align:center"><div style="font-size:50px;margin:0 0 12px" aria-hidden="true">✦</div><div class="eyebrow">Word practice complete</div><h2 style="margin:9px 0">Practice finished</h2><p>Nice work. The learner traced, copied, recalled, and said the word aloud with tutor feedback.</p><p class="session-status" id="completionStatus" role="status">${!state.studentId ? 'No learner was selected; this practice is not in a learner history.' : saved ? 'Session saved on this device.' : 'The session could not be saved yet. Retry below; completion details are still held on this page.'}</p>${state.studentId && !saved ? '<button class="btn secondary" type="button" id="retrySave">Retry saving session</button>' : ''}<button class="btn primary" type="button" id="again">Practise another word</button></section>`;
     state.copyValue = ''; state.coverValue = '';
+    document.getElementById('retrySave')?.addEventListener('click', () => {
+      const retrySaved = saveCompletion();
+      document.getElementById('completionStatus').textContent = retrySaved
+        ? 'Session saved on this device.'
+        : 'The session could not be saved yet. Completion details are still held on this page; try again when browser storage is available.';
+      document.getElementById('retrySave').hidden = retrySaved;
+    });
     document.getElementById('again').addEventListener('click', setup);
+    document.getElementById('again').focus({ preventScroll: true });
   }
 
   function bind() {
     document.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
       switch (button.dataset.action) {
-        case 'confirm-read': state.spoken = true; render(); break;
+        case 'confirm-read': state.spoken = true; render('button[data-action="trace"]'); break;
         case 'trace': {
           if (state.animating !== null || !state.spoken) break;
-          if (reducedMotion()) { state.trace += 1; state.animating = null; render(); break; }
-          state.animating = state.trace; render();
+          if (reducedMotion()) { state.trace += 1; state.animating = null; render(state.trace >= letters().length ? 'button[data-action="next"]' : 'button[data-action="trace"]'); break; }
+          state.animating = state.trace; render('.trace-controls');
           const wordAtStart = state.word; const currentToken = ++traceToken;
           traceTimer = setTimeout(() => {
             traceTimer = null;
             if (traceToken !== currentToken || state.word !== wordAtStart || state.step !== 0 || state.animating === null) return;
-            state.trace += 1; state.animating = null; render();
+            state.trace += 1; state.animating = null; render(state.trace >= letters().length ? 'button[data-action="next"]' : 'button[data-action="trace"]');
           }, 850);
           break;
         }
-        case 'next': state.step = 1; render(); break;
-        case 'confirm-copy': state.copyValue = ''; state.step = 2; render(); break;
-        case 'confirm-cover': state.coverChecked = true; state.coverCorrected = true; state.coverValue = ''; state.step = 3; render(); break;
-        case 'retry-cover': state.coverChecked = true; state.coverCorrected = false; state.coverValue = ''; render(); document.getElementById('coverInput')?.focus(); break;
-        case 'confirm-close': state.closeSpoken = true; render(); break;
+        case 'next': state.step = 1; render(state.responseMode === 'paper' ? 'button[data-action="confirm-copy"]' : '#copyInput'); break;
+        case 'confirm-copy': state.copyValue = ''; state.step = 2; render(state.responseMode === 'paper' ? 'button[data-action="confirm-cover"]' : '#coverInput'); break;
+        case 'confirm-cover': state.coverChecked = true; state.coverCorrected = true; state.coverValue = ''; state.step = 3; render('button[data-action="confirm-close"]'); break;
+        case 'retry-cover': state.coverValue = ''; render('#coverInput'); break;
+        case 'continue-cover': state.step = 3; render('button[data-action="confirm-close"]'); break;
+        case 'confirm-close': state.closeSpoken = true; render('button[data-action="complete"]'); break;
         case 'complete': completeWord(); break;
       }
     }));
@@ -162,12 +179,14 @@ import { getLessonActivityContext } from './lesson-context.mjs';
       event.preventDefault();
       if (form.dataset.form === 'copy') {
         state.copyValue = document.getElementById('copyInput').value.trim().toLowerCase();
-        if (isSpellingMatch(state.copyValue, state.word)) { state.step = 2; render(); }
-        else { render(); document.getElementById('copyInput')?.focus(); }
+        if (isSpellingMatch(state.copyValue, state.word)) { state.step = 2; render(state.responseMode === 'paper' ? 'button[data-action="confirm-cover"]' : '#coverInput'); }
+        else { render('#copyInput'); }
       } else {
         state.coverValue = document.getElementById('coverInput').value.trim().toLowerCase(); state.coverChecked = true;
-        if (isSpellingMatch(state.coverValue, state.word)) { state.coverCorrected = true; state.step = 3; render(); }
-        else { state.coverCorrected = false; render(); document.getElementById('coverInput')?.focus(); }
+        state.coverAttempts += 1;
+        if (isSpellingMatch(state.coverValue, state.word)) { state.coverCorrected = true; state.step = 3; render('button[data-action="confirm-close"]'); }
+        else if (state.coverAttempts >= 2) { state.coverCorrected = false; state.coverCanContinue = true; render('button[data-action="continue-cover"]'); }
+        else { state.coverCorrected = false; render('#coverInput'); }
       }
     }));
   }

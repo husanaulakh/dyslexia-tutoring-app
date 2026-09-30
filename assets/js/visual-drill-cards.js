@@ -1,3 +1,4 @@
+import { createPracticeSession } from './practice-session.mjs';
 import { visualDrillCards, visualDrillGroups } from '../../data/visual-drill-cards.mjs';
 import { getLessonActivityContext } from './lesson-context.mjs';
 import { mountStudentTracker } from './student-tracker.js';
@@ -97,6 +98,7 @@ function updateSelectionStatus(message = '') {
 }
 
 function renderFlashcard(host, card, flipped, { recalled = false } = {}) {
+  const restoreCardFocus = host.querySelector('.flash-card') === document.activeElement;
   host.replaceChildren();
   if (!card) {
     host.append(make('div', 'empty', 'Choose at least one card to begin.'));
@@ -139,6 +141,7 @@ function renderFlashcard(host, card, flipped, { recalled = false } = {}) {
     next.addEventListener('click', () => moveBrowse(1));
     host.append(previous, wrapper, next);
   } else host.append(wrapper);
+  if (restoreCardFocus) button.focus({ preventScroll: true });
 }
 
 function renderBrowseCard() {
@@ -190,24 +193,22 @@ function flipRecall() {
   renderRecallCard();
 }
 
-function saveRecall() {
-  if (practice.saved) return true;
-  const counts = summarizeVisualDrillOutcomes(practice.outcomes);
-  const completedItems = Object.values(counts).reduce((sum, value) => sum + value, 0);
-  if (!practice.studentId || !completedItems) return false;
-  const result = tracker.recordSession({
-    studentId: practice.studentId,
-    activity: 'visual-drill-cards',
-    conceptIds: context?.conceptIds ?? [],
-    listLabel: `${completedItems} tutor-marked recall${completedItems === 1 ? '' : 's'}`,
-    completedItems,
-    totalItems: practice.cards.length,
-    outcomeCounts: counts,
-    durationSeconds: Math.max(0, Math.floor((Date.now() - practice.startedAt) / 1000)),
-  });
-  practice.saved = Boolean(result?.ok);
-  return practice.saved;
-}
+const session = createPracticeSession({
+  record: value => tracker.recordSession(value),
+  onRecovery: () => tracker.refresh(),
+  summary: () => {
+    const counts = summarizeVisualDrillOutcomes(practice.outcomes);
+    const completedItems = Object.values(counts).reduce((sum, value) => sum + value, 0);
+    return {
+      studentId: practice.studentId, activity: 'visual-drill-cards', conceptIds: context?.conceptIds ?? [],
+      listLabel: `${completedItems} tutor-marked recall${completedItems === 1 ? '' : 's'}`,
+      completedItems, totalItems: practice.cards.length, outcomeCounts: counts,
+      durationSeconds: Math.max(0, Math.floor((Date.now() - practice.startedAt) / 1000)),
+    };
+  },
+});
+session.bind(window);
+function saveRecall() { practice.saved = session.save(); return practice.saved; }
 
 function finishRecall() {
   if (!practice.active) return;
@@ -226,6 +227,7 @@ function finishRecall() {
 }
 
 function startRecall() {
+  if (!session.flush()) return;
   const cards = selectVisualDrillCards(visualDrillCards, [...selectedIds]);
   if (!cards.length) {
     updateSelectionStatus('Select at least one valid card before starting recall practice.');
@@ -238,6 +240,7 @@ function startRecall() {
   practice.outcomes = {};
   practice.studentId = tracker.getSelectedStudent()?.id ?? '';
   practice.startedAt = Date.now();
+  session.reset();
   practice.saved = false;
   $('#donePanel').hidden = true;
   $('#studentTracker').hidden = true;
@@ -252,7 +255,7 @@ function selectOutcome(outcome) {
   const card = practice.cards[practice.index];
   if (!card || !practice.flipped || !['independent', 'supported', 'revisit'].includes(outcome)) return;
   const result = recordVisualDrillOutcome(practice.outcomes, card.id, outcome);
-  if (result.added) practice.outcomes = result.outcomes;
+  if (result.added) { practice.outcomes = result.outcomes; saveRecall(); }
   renderRecallCard();
 }
 

@@ -1,3 +1,4 @@
+import { createPracticeSession } from './practice-session.mjs';
 import { mountStudentTracker } from './student-tracker.js';
 import { getLessonActivityContext } from './lesson-context.mjs';
 import { auditoryDictationItems } from '../../data/auditory-dictation-items.mjs';
@@ -51,6 +52,7 @@ function renderItem() {
 }
 
 function startPractice() {
+  if (!session.flush()) return;
   currentItems = selectDictationItems(ctx?.settings ?? { preset: $('#itemMode').value });
   if (!ctx) {
     const mode = $('#itemMode').value;
@@ -60,6 +62,7 @@ function startPractice() {
   index = 0; completed = 0; outcomes = emptyOutcomeCounts(); sessionSaved = false;
   learnerId = ctx?.studentId ?? tracker.getSelectedStudent()?.id ?? '';
   startedAt = Date.now();
+  session.reset();
   $('#setupError').textContent = '';
   $('#studentTracker').hidden = true;
   $('#setupPanel').hidden = true;
@@ -92,17 +95,17 @@ function revealAnswer() {
   }
 }
 
-function saveSession() {
-  if (sessionSaved) return true;
-  if (!learnerId || completed === 0) return false;
-  const result = tracker.recordSession({
-    studentId: learnerId, activity: 'auditory-dictation', listLabel: 'Tutor-spoken dictation',
+const session = createPracticeSession({
+  record: value => tracker.recordSession(value),
+  onRecovery: () => tracker.refresh(),
+  summary: () => ({
+    studentId: learnerId, conceptIds: ctx?.conceptIds ?? [], activity: 'auditory-dictation', listLabel: 'Tutor-spoken dictation',
     completedItems: completed, totalItems: currentItems.length, outcomeCounts: outcomes,
     durationSeconds: Math.max(0, Math.floor((Date.now() - startedAt) / 1000)),
-  });
-  sessionSaved = Boolean(result.ok);
-  return sessionSaved;
-}
+  }),
+});
+session.bind(window);
+function saveSession() { sessionSaved = session.save(); return sessionSaved; }
 
 function finishPractice() {
   const saved = saveSession();
@@ -121,6 +124,7 @@ document.querySelectorAll('.outcome').forEach(button => button.addEventListener(
 $('#nextItem').addEventListener('click', () => {
   if (!revealed || !chosenOutcome) return;
   outcomes[chosenOutcome] += 1; completed += 1; index += 1;
+  saveSession();
   if (index >= currentItems.length) finishPractice(); else renderItem();
 });
 $('#endPractice').addEventListener('click', finishPractice);

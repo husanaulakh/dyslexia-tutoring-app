@@ -299,7 +299,7 @@ function refreshResumeButton() {
   active = result.active;
   const button = $('#resumeLesson');
   button.hidden = !active;
-  $('#startLesson').disabled = Boolean(active);
+  $('#startLesson').disabled = Boolean(active) || Boolean(result.error);
   if (result.error) setStatus('Session storage is unavailable. An active lesson cannot be resumed.', true);
   else if (active) button.textContent = `Resume lesson · ${active.template.name}`;
 }

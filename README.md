@@ -8,7 +8,7 @@ Bright Steps is a static collection of tutor-led reading practice tools. It uses
 - **Sound Boxes** uses tutor-provided phoneme annotations for 2–6 sounds. Phoneme counts are not inferred from the number of letters. Learners can use physical counters or on-screen counters; the written word is revealed after mapping.
 - **Auditory Dictation** has the tutor say a sound or word. Learners respond on paper or type; the tutor reveals accepted spellings and records an outcome.
 - **Word Workshop** includes silent-e transformations, FLOSS/ai/ay sorting, six syllable types, and explicitly annotated VC.CV practice.
-- **Reading Words** practices tutor-managed word lists and brings missed words back once after three other words.
+- **Reading Words** practices tutor-managed word lists and brings missed words back once after up to three other words.
 - **Paragraph Reading** practices tutor-managed passages with optional oral comprehension prompts and configurable rereading.
 - **Tutor Suggestions** offers original, concept-linked word sets for tutor selection. A selected set can be saved as a Reading Words list.
 - **Blending Board** supports 2–6 spelling tiles, tutor-defined words, and checked manual splits.
@@ -39,3 +39,5 @@ No environment variables are required. The static hosting setup and Content Secu
 - `robots.txt` and page metadata ask compliant crawlers not to index or fetch the site. They are not access control. Avoid putting sensitive learner information in public static content.
 
 Student labels, aggregate activity summaries, assessment statuses, lesson templates, and presentation preferences remain in the current browser profile on the same origin. They are not backed up or synchronized to other devices. Use initials or non-identifying learner codes. Typed and spoken learner responses are not stored in session summaries. Tutor Suggestions saves selected word lists locally and opens them in Reading Words with a validated `?list=` ID; this does not start a lesson or select a learner.
+
+Completed tutor outcomes are saved as one updating aggregate per practice run, including partial practice. Failed saves offer a retry and keep aggregate-only recovery data in the current tab when session storage is available. Recovery retains the original learner ID. Unreadable or newer stored data is preserved rather than replaced. See [the production-readiness review](docs/production-readiness.md) for fixes, test coverage, and operational limits.

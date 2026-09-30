@@ -72,6 +72,34 @@ test('saving a suggestion appends a safe Reading Words list and preserves existi
   assert.deepEqual(JSON.parse(storage.getItem(READING_WORD_LISTS_KEY)).map(list => list.id), ['list-a', 'list-b', 'suggested-short-vowels-abc123']);
 });
 
+test('an unchanged suggested list is reused at the list cap while an edited list is never overwritten', () => {
+  const storage = new MemoryStorage();
+  const suggestion = getTutorSuggestion('short-vowels');
+  const exact = { id: 'suggested-short-vowels-existing', name: `Suggested: ${suggestion.title}`.slice(0, 40), words: [...suggestion.words] };
+  const cappedLists = [
+    ...Array.from({ length: MAX_READING_WORD_LISTS - 1 }, (_, index) => ({ id: `tutor-${index}`, name: `Tutor ${index}`, words: ['tap'] })),
+    exact,
+  ];
+  const originalAtCap = JSON.stringify(cappedLists);
+  storage.setItem(READING_WORD_LISTS_KEY, originalAtCap);
+  const reused = saveSuggestionAsReadingList('short-vowels', { storage });
+  assert.equal(reused.ok, true);
+  assert.equal(reused.reused, true);
+  assert.equal(reused.list.id, exact.id);
+  assert.equal(storage.getItem(READING_WORD_LISTS_KEY), originalAtCap);
+
+  const edited = { ...exact, words: ['changed', 'words'] };
+  storage.setItem(READING_WORD_LISTS_KEY, JSON.stringify([edited]));
+  const added = saveSuggestionAsReadingList('short-vowels', {
+    storage,
+    makeId: () => 'suggested-short-vowels-new',
+  });
+  assert.equal(added.ok, true);
+  assert.notEqual(added.list.id, edited.id);
+  assert.deepEqual(added.lists[0].words, edited.words);
+  assert.deepEqual(added.list.words, suggestion.words);
+});
+
 test('saving rejects list overflow, hostile stored words, malformed data, duplicate IDs, and storage errors safely', () => {
   const storage = new MemoryStorage();
   const twelve = Array.from({ length: MAX_READING_WORD_LISTS }, (_, index) => ({ id: `list-${index}`, name: `List ${index}`, words: ['cat'] }));

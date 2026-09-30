@@ -44,16 +44,4 @@ export function advanceReviewQueue(queue, wasCorrect) {
   return remaining;
 }
 
-export function normalizeReadingOutcome(value) {
-  return ['independent', 'supported', 'revisit'].includes(value) ? value : '';
-}
-
-export function createReadingOutcomeCounts() {
-  return { independent: 0, supported: 0, revisit: 0 };
-}
-
-export function recordReadingOutcome(counts, value) {
-  const outcome = normalizeReadingOutcome(value);
-  if (!outcome || !counts || !Number.isInteger(counts[outcome]) || counts[outcome] < 0) return counts;
-  return { ...counts, [outcome]: counts[outcome] + 1 };
-}
+export { normalizeOutcome as normalizeReadingOutcome, createOutcomeCounts as createReadingOutcomeCounts, recordOutcome as recordReadingOutcome } from './practice-outcomes.mjs';

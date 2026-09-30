@@ -1,3 +1,5 @@
+import { createPracticeSession } from './practice-session.mjs';
+import { loadStoredCollection, saveStoredCollection } from './collection-storage.mjs';
 import { mountStudentTracker } from './student-tracker.js';
 import { getLessonActivityContext, loadActiveLesson } from './lesson-context.mjs';
 import {
@@ -17,13 +19,15 @@ const elements = {
   progressFill: $('#progressFill'), kind: $('#wordKind'), word: $('#practiceWord'), hint: $('#practiceHint'),
 };
 
+let storedLists = null;
 function loadLists() {
-  try {
-    const value = localStorage.getItem(STORAGE_KEY);
-    return value === null ? normalizeWordLists(null, STARTER_WORDS) : normalizeWordLists(JSON.parse(value), STARTER_WORDS);
-  } catch {
-    return normalizeWordLists(null, STARTER_WORDS);
-  }
+  storedLists = loadStoredCollection({
+    key: STORAGE_KEY,
+    normalize: value => normalizeWordLists(value, STARTER_WORDS),
+    fallback: () => normalizeWordLists(null, STARTER_WORDS),
+  });
+  if (storedLists.error) elements.status.textContent = 'Saved word lists could not be read. Starter words are available for this visit, and the existing stored data will be left untouched.';
+  return storedLists.items;
 }
 
 const state = {
@@ -47,8 +51,18 @@ if (lessonContext?.settings?.listId && state.lists.some(list => list.id === less
 
 function selectedList() { return state.lists.find(list => list.id === state.selectedId) ?? state.lists[0]; }
 function saveStorage() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.lists)); return true; }
-  catch { return false; }
+  const result = saveStoredCollection({ key: STORAGE_KEY, items: state.lists, loaded: storedLists });
+  if (!result.ok) {
+    storedLists = { ...storedLists, error: result.error };
+    return false;
+  }
+  storedLists = { ...storedLists, raw: result.raw, error: null };
+  return true;
+}
+function saveFailureMessage() {
+  return ['invalid-data', 'changed'].includes(storedLists?.error)
+    ? 'Saved only for this visit. Stored word-list data is unreadable or changed elsewhere, so it was left untouched.'
+    : 'Saved for this session, but browser storage is unavailable.';
 }
 function refreshSelect() {
   const previous = state.selectedId;
@@ -76,10 +90,11 @@ function saveEditor(showMessage = true) {
   const persisted = saveStorage();
   refreshSelect();
   showEditor();
-  if (showMessage) elements.status.textContent = persisted ? `Saved ${list.name} (${list.words.length} ${list.words.length === 1 ? 'word' : 'words'}).` : 'Saved for this session, but browser storage is unavailable.';
+  if (showMessage) elements.status.textContent = persisted ? `Saved ${list.name} (${list.words.length} ${list.words.length === 1 ? 'word' : 'words'}).` : saveFailureMessage();
   return list;
 }
 function beginPractice() {
+  if (!session.flush()) return;
   const student = tracker.getSelectedStudent();
   if (!student) { elements.status.textContent = 'Add or select a student above before starting.'; return; }
   const list = saveEditor(false);
@@ -95,6 +110,7 @@ function beginPractice() {
   state.activeName = list.name;
   state.studentId = student.id;
   state.startedAt = Date.now();
+  session.reset();
   state.sessionSaved = false;
   state.outcomeCounts = createReadingOutcomeCounts();
   state.retryOutcomeCounts = createReadingOutcomeCounts();
@@ -137,22 +153,22 @@ function markWord(outcomeValue) {
   }
   if (!state.queue.length) { completePractice(); return; }
   state.shown += 1;
+  saveSession();
   renderWord();
 }
+const session = createPracticeSession({
+  record: value => tracker.recordSession(value),
+  onRecovery: () => tracker.refresh(),
+  summary: () => ({
+    studentId: state.studentId, activity: 'reading-words', conceptIds: lessonContext?.conceptIds ?? [], listLabel: state.activeName,
+    completedItems: state.completed, totalItems: state.total,
+    outcomeCounts: state.outcomeCounts, retryOutcomeCounts: state.retryOutcomeCounts,
+    durationSeconds: Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)),
+  }),
+});
+session.bind(window);
 function saveSession() {
-  if (state.sessionSaved) return true;
-  if (!state.studentId || state.completed < 1) return false;
-  try {
-    const result = tracker.recordSession({
-      studentId: state.studentId, activity: 'reading-words', conceptIds: lessonContext?.conceptIds ?? [], listLabel: state.activeName,
-      completedItems: state.completed, totalItems: state.total,
-      outcomeCounts: state.outcomeCounts, retryOutcomeCounts: state.retryOutcomeCounts,
-      durationSeconds: Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)),
-    });
-    state.sessionSaved = Boolean(result?.ok);
-  } catch {
-    state.sessionSaved = false;
-  }
+  state.sessionSaved = session.save();
   return state.sessionSaved;
 }
 function completePractice() {
@@ -161,7 +177,7 @@ function completePractice() {
   elements.practice.hidden = true;
   elements.done.hidden = false;
   const reviewText = state.reviewsScheduled
-    ? `${state.reviewsScheduled} ${state.reviewsScheduled === 1 ? 'word was' : 'words were'} reviewed once after three others.`
+    ? `${state.reviewsScheduled} ${state.reviewsScheduled === 1 ? 'word was' : 'words were'} reviewed once after up to three others.`
     : 'No words needed a retry.';
   const initial = state.outcomeCounts;
   const retries = state.retryOutcomeCounts;
@@ -198,10 +214,10 @@ $('#addList').addEventListener('click', () => {
   const id = `list-${Date.now()}-${number}`;
   state.lists.push({ id, name: `List ${number}`, words: [] });
   state.selectedId = id;
-  saveStorage();
+  const persisted = saveStorage();
   refreshSelect();
   showEditor();
-  elements.status.textContent = `Added List ${number}.`;
+  elements.status.textContent = persisted ? `Added List ${number}.` : `Added List ${number} for this session only. ${saveFailureMessage()}`;
   elements.name.focus();
 });
 $('#correctWord').addEventListener('click', () => markWord('independent'));

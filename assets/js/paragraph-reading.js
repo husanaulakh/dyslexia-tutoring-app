@@ -1,3 +1,5 @@
+import { createPracticeSession } from './practice-session.mjs';
+import { loadStoredCollection, saveStoredCollection } from './collection-storage.mjs';
 import { mountStudentTracker } from './student-tracker.js';
 import {
   advanceParagraphReviewQueue, buildParagraphReviewQueue, createParagraphOutcomeCounts,
@@ -23,15 +25,15 @@ const elements = {
   questionWrap: $('#comprehensionPrompt'), question: $('#practiceQuestion'),
 };
 
+let storedLists = null;
 function loadLists() {
-  try {
-    const value = localStorage.getItem(STORAGE_KEY);
-    return value === null
-      ? normalizeParagraphLists(null, STARTER_PARAGRAPHS)
-      : normalizeParagraphLists(JSON.parse(value), STARTER_PARAGRAPHS);
-  } catch {
-    return normalizeParagraphLists(null, STARTER_PARAGRAPHS);
-  }
+  storedLists = loadStoredCollection({
+    key: STORAGE_KEY,
+    normalize: value => normalizeParagraphLists(value, STARTER_PARAGRAPHS),
+    fallback: () => normalizeParagraphLists(null, STARTER_PARAGRAPHS),
+  });
+  if (storedLists.error) elements.status.textContent = 'Saved paragraph lists could not be read. Starter paragraphs are available for this visit, and the existing stored data will be left untouched.';
+  return storedLists.items;
 }
 
 const state = {
@@ -57,8 +59,18 @@ if (lessonContext?.settings?.rereadMode) {
 
 function selectedList() { return state.lists.find(list => list.id === state.selectedId) ?? state.lists[0]; }
 function saveStorage() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.lists)); return true; }
-  catch { return false; }
+  const result = saveStoredCollection({ key: STORAGE_KEY, items: state.lists, loaded: storedLists });
+  if (!result.ok) {
+    storedLists = { ...storedLists, error: result.error };
+    return false;
+  }
+  storedLists = { ...storedLists, raw: result.raw, error: null };
+  return true;
+}
+function saveFailureMessage() {
+  return ['invalid-data', 'changed'].includes(storedLists?.error)
+    ? 'Saved only for this visit. Stored paragraph-list data is unreadable or changed elsewhere, so it was left untouched.'
+    : 'Saved for this session, but browser storage is unavailable.';
 }
 function refreshSelect() {
   const previous = state.selectedId;
@@ -91,10 +103,11 @@ function saveEditor(showMessage = true) {
   showEditor();
   if (showMessage) elements.status.textContent = persisted
     ? `Saved ${list.name} (${list.paragraphs.length} ${list.paragraphs.length === 1 ? 'paragraph' : 'paragraphs'}).`
-    : 'Saved for this session, but browser storage is unavailable.';
+    : saveFailureMessage();
   return list;
 }
 function beginPractice() {
+  if (!session.flush()) return;
   const student = tracker.getSelectedStudent();
   if (!student) { elements.status.textContent = 'Add or select a student above before starting.'; return; }
   const list = saveEditor(false);
@@ -114,6 +127,7 @@ function beginPractice() {
   state.activeName = list.name;
   state.studentId = lessonContext?.studentId ?? student.id;
   state.startedAt = Date.now();
+  session.reset();
   state.sessionSaved = false;
   state.selectedOutcome = '';
   state.outcomeCounts = createParagraphOutcomeCounts();
@@ -162,6 +176,7 @@ function nextParagraph(outcomeValue) {
   if (shouldReread && state.rereadMode === 'needs-practice') state.total += 1;
   if (!state.queue.length) { completePractice(); return; }
   state.shown += 1;
+  saveSession();
   renderParagraph();
 }
 function selectOutcome(outcome) {
@@ -170,16 +185,19 @@ function selectOutcome(outcome) {
   $('#nextParagraph').disabled = false;
   elements.hint.textContent = `${outcome === 'independent' ? 'Independent' : outcome === 'supported' ? 'With help' : 'Revisit'} selected. Tutor: finish this paragraph to continue.`;
 }
-function saveSession(completedItems = state.completed) {
-  if (state.sessionSaved) return true;
-  if (!state.studentId || completedItems < 1) return false;
-  const result = tracker.recordSession({
+const session = createPracticeSession({
+  record: value => tracker.recordSession(value),
+  onRecovery: () => tracker.refresh(),
+  summary: () => ({
     studentId: state.studentId, activity: 'paragraph-reading', conceptIds: lessonContext?.conceptIds ?? [], listLabel: state.activeName,
-    completedItems, totalItems: state.total,
+    completedItems: state.completed, totalItems: state.total,
     outcomeCounts: state.outcomeCounts, retryOutcomeCounts: state.retryOutcomeCounts,
     durationSeconds: Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)),
-  });
-  state.sessionSaved = Boolean(result.ok);
+  }),
+});
+session.bind(window);
+function saveSession() {
+  state.sessionSaved = session.save();
   return state.sessionSaved;
 }
 function completePractice() {
@@ -195,7 +213,7 @@ function completePractice() {
   $('#doneText').textContent = `You completed ${state.completed} of ${state.total} paragraph cards from ${state.activeName}. First responses: ${first.independent} independent, ${first.supported} with help, ${first.revisit} revisit. ${rereadText}${retryText}${state.completed > 0 && !saved ? ' The session could not be saved in browser storage.' : ''}`;
 }
 function backToLists() {
-  const saved = saveSession(state.completed);
+  const saved = saveSession();
   $('#studentTracker').hidden = false;
   elements.practice.hidden = true;
   elements.done.hidden = true;
@@ -225,7 +243,7 @@ $('#addList').addEventListener('click', () => {
   const persisted = saveStorage();
   refreshSelect();
   showEditor();
-  elements.status.textContent = persisted ? `Added Paragraphs ${number}.` : `Added Paragraphs ${number} for this session.`;
+  elements.status.textContent = persisted ? `Added Paragraphs ${number}.` : `Added Paragraphs ${number} for this session only. ${saveFailureMessage()}`;
   elements.name.focus();
 });
 $('#nextParagraph').addEventListener('click', () => nextParagraph());

@@ -1,3 +1,4 @@
+import { createPracticeSession } from './practice-session.mjs';
 import { mountStudentTracker } from './student-tracker.js';
 import { getLessonActivityContext } from './lesson-context.mjs';
 import { soundBoxWords } from '../../data/sound-boxes-words.mjs';
@@ -89,6 +90,7 @@ function renderItem() {
 }
 
 function startPractice() {
+  if (!session.flush()) return;
   const parsed = parseAnnotatedWords($('#customWords').value);
   if ($('#customWords').value.trim() && parsed.errors.length) {
     $('#setupError').textContent = parsed.errors.join(' ');
@@ -103,6 +105,7 @@ function startPractice() {
   index = 0; completed = 0; outcomes = emptyOutcomeCounts(); sessionSaved = false;
   learnerId = ctx?.studentId ?? tracker.getSelectedStudent()?.id ?? '';
   startedAt = Date.now();
+  session.reset();
   $('#setupError').textContent = '';
   $('#studentTracker').hidden = true;
   $('#setupPanel').hidden = true;
@@ -128,18 +131,18 @@ function showTutorWord() {
   $('#tutorWord').hidden = false;
 }
 
-function saveSession() {
-  if (sessionSaved) return true;
-  if (!learnerId || completed === 0) return false;
-  const result = tracker.recordSession({
-    studentId: learnerId, activity: 'sound-boxes', listLabel: 'Annotated sound boxes',
+const session = createPracticeSession({
+  record: value => tracker.recordSession(value),
+  onRecovery: () => tracker.refresh(),
+  summary: () => ({
+    studentId: learnerId, conceptIds: ctx?.conceptIds ?? [], activity: 'sound-boxes', listLabel: 'Annotated sound boxes',
     completedItems: completed, totalItems: currentItems.length,
     outcomeCounts: outcomes,
     durationSeconds: Math.max(0, Math.floor((Date.now() - startedAt) / 1000)),
-  });
-  sessionSaved = Boolean(result.ok);
-  return sessionSaved;
-}
+  }),
+});
+session.bind(window);
+function saveSession() { sessionSaved = session.save(); return sessionSaved; }
 
 function finishPractice() {
   const saved = saveSession();
@@ -159,6 +162,7 @@ document.querySelectorAll('.outcome').forEach(button => button.addEventListener(
 $('#nextWord').addEventListener('click', () => {
   if (!revealed || !chosenOutcome) return;
   outcomes[chosenOutcome] += 1; completed += 1; index += 1;
+  saveSession();
   if (index >= currentItems.length) finishPractice(); else renderItem();
 });
 $('#endPractice').addEventListener('click', finishPractice);

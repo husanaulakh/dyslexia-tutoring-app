@@ -132,7 +132,7 @@ test('TCCC validates tutor word and completes the trace-copy-cover-close sequenc
   await expect(page.getByText('Compare with the model:')).toBeVisible();
   await page.getByRole('button', { name: 'Try again from memory' }).click();
   await page.getByLabel('Spell the covered word').fill('ship');
-  await page.getByRole('button', { name: 'Check again' }).click();
+  await page.getByRole('button', { name: 'Check retry' }).click();
   await expect(page.locator('.step-row.active .step-title')).toHaveText('Close');
   await page.getByRole('button', { name: 'Tutor confirms spoken spelling' }).click();
   await page.getByRole('button', { name: /Finish this word/ }).click();

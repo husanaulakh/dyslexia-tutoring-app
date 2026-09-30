@@ -29,6 +29,13 @@ function safeId(value, fallback) {
   return /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/.test(id) ? id : fallback;
 }
 
+function createRunId() {
+  try {
+    if (typeof globalThis.crypto?.randomUUID === 'function') return `run-${globalThis.crypto.randomUUID()}`;
+  } catch { /* Fall back to a bounded, locally generated identifier. */ }
+  return `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
+}
+
 function storageOrNull(storage, kind) {
   if (storage !== undefined) return storage;
   try { return globalThis[kind] ?? null; } catch { return null; }
@@ -135,7 +142,11 @@ function normalizeActive(value) {
     : [];
   const startedAt = typeof value.startedAt === 'string' && Number.isFinite(Date.parse(value.startedAt))
     ? new Date(value.startedAt).toISOString() : new Date(0).toISOString();
-  return { version: 1, template, studentId, index, completedStepIds, startedAt };
+  // Older active lessons had no run ID. Keep their previous deterministic
+  // summary ID so a resumed legacy lesson still updates its existing record.
+  const legacyRunId = `${Date.parse(startedAt).toString(36)}-${studentId.slice(0, 70)}`.slice(0, 80);
+  const runId = safeId(value.runId, legacyRunId);
+  return { version: 1, runId, template, studentId, index, completedStepIds, startedAt };
 }
 
 function readActive(storage) {
@@ -144,7 +155,8 @@ function readActive(storage) {
   try {
     const raw = target.getItem(ACTIVE_LESSON_KEY);
     if (raw === null) return { active: null, error: null };
-    return { active: normalizeActive(JSON.parse(raw)), error: null };
+    const active = normalizeActive(JSON.parse(raw));
+    return { active, error: active ? null : 'invalid-data' };
   } catch { return { active: null, error: 'unavailable' }; }
 }
 
@@ -167,7 +179,10 @@ export function startLesson(templateValue, studentId, storage) {
   const id = safeId(studentId, '');
   if (!template) return { ok: false, error: 'invalid-template' };
   if (!id) return { ok: false, error: 'invalid-student' };
-  return writeActive({ version: 1, template, studentId: id, index: 0, completedStepIds: [], startedAt: new Date().toISOString() }, storage);
+  const existing = readActive(storage);
+  if (existing.error) return { ok: false, error: existing.error };
+  if (existing.active) return { ok: false, error: 'active-lesson' };
+  return writeActive({ version: 1, runId: createRunId(), template, studentId: id, index: 0, completedStepIds: [], startedAt: new Date().toISOString() }, storage);
 }
 
 export function completeLessonStep(stepId, storage) {

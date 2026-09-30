@@ -33,8 +33,4 @@ export function isAcceptedSpelling(item, response) {
   return item.acceptedSpellings.includes(response.trim().toLowerCase());
 }
 
-export function normalizeOutcome(value) {
-  return ['independent', 'supported', 'revisit'].includes(value) ? value : '';
-}
-
-export function emptyOutcomeCounts() { return { independent: 0, supported: 0, revisit: 0 }; }
+export { normalizeOutcome, createOutcomeCounts as emptyOutcomeCounts } from './practice-outcomes.mjs';

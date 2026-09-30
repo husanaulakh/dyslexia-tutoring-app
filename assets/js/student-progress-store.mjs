@@ -118,6 +118,14 @@ function normalizeSession(record, students, index) {
   return session;
 }
 
+/** Validate a transient recovery summary without accepting or retaining learner response text. */
+export function normalizeSessionSummary(summary) {
+  if (!summary || typeof summary !== 'object' || Array.isArray(summary)) return null;
+  if (typeof summary.id !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(summary.id)) return null;
+  if (typeof summary.studentId !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(summary.studentId)) return null;
+  return normalizeSession(summary, [{ id: summary.studentId, name: 'Learner' }], 0);
+}
+
 const ASSESSMENT_STATUSES = new Set(['introduced', 'developing', 'secure', 'revisit']);
 
 function normalizeAssessmentRecord(record, students) {
@@ -129,6 +137,18 @@ function normalizeAssessmentRecord(record, students) {
   const candidate = typeof record.updatedAt === 'string' ? record.updatedAt : '';
   const updatedAt = Number.isFinite(Date.parse(candidate)) ? new Date(candidate).toISOString() : new Date(0).toISOString();
   return { studentId, itemId, status, updatedAt };
+}
+
+function payloadError(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return 'invalid-data';
+  const version = value.schemaVersion ?? value.version ?? 0;
+  if (version === 0 || version === 1 || version === 2 || version === STUDENT_SCHEMA_VERSION) {
+    const profiles = Array.isArray(value.students) || Array.isArray(value.profiles);
+    return profiles ? null : 'invalid-data';
+  }
+  return typeof version === 'number' && Number.isFinite(version) && version > STUDENT_SCHEMA_VERSION
+    ? 'future-version'
+    : 'invalid-data';
 }
 
 function uniqueById(records) {
@@ -164,32 +184,46 @@ export function migrateStudentData(value) {
   const assessment = Array.isArray(value.assessment)
     ? value.assessment.map(record => normalizeAssessmentRecord(record, students)).filter(Boolean).slice(-3000)
     : [];
-  const uniqueAssessment = [];
-  const assessmentKeys = new Set();
+  const assessmentByKey = new Map();
   for (const record of assessment) {
     const key = `${record.studentId}:${record.itemId}`;
-    if (assessmentKeys.has(key)) continue;
-    assessmentKeys.add(key);
-    uniqueAssessment.push(record);
+    const previous = assessmentByKey.get(key);
+    if (!previous || Date.parse(record.updatedAt) >= Date.parse(previous.updatedAt)) {
+      // Prefer the latest record; equal timestamps preserve the last source entry.
+      assessmentByKey.set(key, record);
+    }
   }
-  return { schemaVersion: STUDENT_SCHEMA_VERSION, students, selectedStudentId, sessions, assessment: uniqueAssessment };
+  return { schemaVersion: STUDENT_SCHEMA_VERSION, students, selectedStudentId, sessions, assessment: [...assessmentByKey.values()] };
 }
 
 /** Load and migrate the persistent store; `error` indicates unavailable or invalid storage. */
 export function loadStudentData(storage) {
   const target = storageOrNull(storage);
   if (!target) return { data: DEFAULT_DATA(), error: 'unavailable' };
+  let raw;
   try {
-    const raw = target.getItem(STUDENT_STORAGE_KEY);
-    if (raw === null) return { data: DEFAULT_DATA(), error: null };
-    const data = migrateStudentData(JSON.parse(raw));
+    raw = target.getItem(STUDENT_STORAGE_KEY);
+  } catch {
+    return { data: DEFAULT_DATA(), error: 'unavailable' };
+  }
+  if (raw === null) return { data: DEFAULT_DATA(), error: null };
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { data: DEFAULT_DATA(), error: 'invalid-data' };
+  }
+  const error = payloadError(parsed);
+  if (error) return { data: DEFAULT_DATA(), error };
+  try {
+    const data = migrateStudentData(parsed);
     if (JSON.stringify(data) !== raw) {
       try { target.setItem(STUDENT_STORAGE_KEY, JSON.stringify(data)); }
       catch { /* Valid in-memory data remains usable when migration cannot persist. */ }
     }
     return { data, error: null };
   } catch {
-    return { data: DEFAULT_DATA(), error: 'unavailable' };
+    return { data: DEFAULT_DATA(), error: 'invalid-data' };
   }
 }
 
@@ -197,6 +231,7 @@ export function loadStudentData(storage) {
 export function saveStudentData(value, storage) {
   const target = storageOrNull(storage);
   if (!target) return false;
+  if (payloadError(value) || loadStudentData(storage).error) return false;
   try {
     target.setItem(STUDENT_STORAGE_KEY, JSON.stringify(migrateStudentData(value)));
     return true;
@@ -212,7 +247,8 @@ export function getSelectedStudent(storage) {
 
 /** Change the globally selected profile. Returns false for unknown IDs or storage errors. */
 export function setSelectedStudent(studentId, storage) {
-  const { data } = loadStudentData(storage);
+  const { data, error } = loadStudentData(storage);
+  if (error) return false;
   if (!data.students.some(student => student.id === studentId)) return false;
   data.selectedStudentId = studentId;
   return saveStudentData(data, storage);
@@ -222,7 +258,8 @@ export function setSelectedStudent(studentId, storage) {
 export function addStudentProfile(name, storage) {
   const normalizedName = normalizeStudentName(name);
   if (!normalizedName) return { ok: false, error: 'invalid-name', student: null };
-  const { data } = loadStudentData(storage);
+  const { data, error } = loadStudentData(storage);
+  if (error) return { ok: false, error, student: null };
   if (data.students.length >= MAX_STUDENTS) return { ok: false, error: 'limit', student: null };
   const student = { id: makeId('student'), name: normalizedName };
   data.students.push(student);
@@ -233,16 +270,34 @@ export function addStudentProfile(name, storage) {
 
 /** Record a bounded activity summary for the selected (or explicitly supplied) profile. */
 export function recordStudentSession(summary, storage) {
-  const { data } = loadStudentData(storage);
+  const { data, error } = loadStudentData(storage);
+  if (error) return { ok: false, error, session: null };
+  const requestedId = summary?.id;
+  if (requestedId !== undefined && (typeof requestedId !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(requestedId))) {
+    return { ok: false, error: 'invalid-id', session: null };
+  }
   const studentId = typeof summary?.studentId === 'string' ? summary.studentId : data.selectedStudentId;
   if (!data.students.some(student => student.id === studentId)) return { ok: false, error: 'no-student', session: null };
   const session = normalizeSession({
     ...summary,
-    id: makeId('session'),
+    id: requestedId ?? makeId('session'),
     studentId,
-    completedAt: new Date().toISOString(),
+    completedAt: summary?.completedAt ?? new Date().toISOString(),
   }, data.students, data.sessions.length);
   if (!session) return { ok: false, error: 'invalid-session', session: null };
+  const existingIndex = requestedId === undefined ? -1 : data.sessions.findIndex(item => item.id === requestedId);
+  if (existingIndex >= 0) {
+    const existing = data.sessions[existingIndex];
+    if (existing.studentId !== session.studentId || existing.activity !== session.activity) {
+      return { ok: false, error: 'id-conflict', session: null };
+    }
+    if (session.completedItems < existing.completedItems) {
+      // A delayed recovery snapshot must not roll a later checkpoint back.
+      // Treat it as successfully superseded so callers can clear the outbox.
+      return { ok: true, error: null, session: { ...existing } };
+    }
+    data.sessions.splice(existingIndex, 1);
+  }
   data.sessions.push(session);
   const perStudentCount = data.sessions.reduce((count, item) => count + (item.studentId === studentId ? 1 : 0), 0);
   if (perStudentCount > MAX_SESSIONS_PER_STUDENT) {
@@ -281,7 +336,8 @@ export function setStudentAssessmentStatus(studentId, itemId, status, storage) {
     return { ok: false, error: 'invalid-item' };
   }
   if (status !== '' && !ASSESSMENT_STATUSES.has(status)) return { ok: false, error: 'invalid-status' };
-  const { data } = loadStudentData(storage);
+  const { data, error } = loadStudentData(storage);
+  if (error) return { ok: false, error };
   if (!data.students.some(student => student.id === studentId)) return { ok: false, error: 'no-student' };
   data.assessment = data.assessment.filter(record => !(record.studentId === studentId && record.itemId === itemId));
   if (status) data.assessment.push({ studentId, itemId, status, updatedAt: new Date().toISOString() });

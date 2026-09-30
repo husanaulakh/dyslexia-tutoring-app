@@ -11,8 +11,10 @@ import {
   migrateStudentData,
   normalizeStudentName,
   normalizeStudentProfile,
+  normalizeSessionSummary,
   recordStudentSession,
   getStudentAssessmentProgress,
+  saveStudentData,
   setStudentAssessmentStatus,
   setSelectedStudent,
 } from '../../assets/js/student-progress-store.mjs';
@@ -26,6 +28,12 @@ class MemoryStorage {
 class BrokenStorage {
   getItem() { throw new Error('blocked'); }
   setItem() { throw new Error('blocked'); }
+}
+
+class ReadBrokenStorage extends MemoryStorage {
+  writes = 0;
+  getItem() { throw new Error('read blocked'); }
+  setItem(key, value) { this.writes += 1; super.setItem(key, value); }
 }
 
 test('unversioned legacy data migrates to the current schema and validates records', () => {
@@ -79,6 +87,34 @@ test('loadStudentData persists the migrated versioned schema under a stable key'
   assert.equal(loadStudentData(new BrokenStorage()).error, 'unavailable');
 });
 
+test('future, invalid, and unreadable store payloads are preserved and mutations fail closed', () => {
+  const future = new MemoryStorage();
+  const futureRaw = JSON.stringify({ schemaVersion: 4, students: [{ id: 's4', name: 'Future learner' }], privateFutureField: ['keep'] });
+  future.setItem(STUDENT_STORAGE_KEY, futureRaw);
+  assert.equal(loadStudentData(future).error, 'future-version');
+  assert.equal(future.getItem(STUDENT_STORAGE_KEY), futureRaw);
+  assert.equal(addStudentProfile('New learner', future).error, 'future-version');
+  assert.equal(recordStudentSession({ studentId: 's4', activity: 'lesson', completedItems: 1, totalItems: 1 }, future).error, 'future-version');
+  assert.equal(setStudentAssessmentStatus('s4', 'l1-short-vowels', 'secure', future).error, 'future-version');
+  assert.equal(setSelectedStudent('s4', future), false);
+  assert.equal(saveStudentData({ schemaVersion: 4, students: [] }, future), false);
+  assert.equal(future.getItem(STUDENT_STORAGE_KEY), futureRaw);
+
+  const malformed = new MemoryStorage();
+  malformed.setItem(STUDENT_STORAGE_KEY, '{truncated');
+  assert.equal(loadStudentData(malformed).error, 'invalid-data');
+  assert.equal(addStudentProfile('New learner', malformed).error, 'invalid-data');
+  assert.equal(setStudentAssessmentStatus('missing', 'l1-short-vowels', 'secure', malformed).error, 'invalid-data');
+  assert.equal(malformed.getItem(STUDENT_STORAGE_KEY), '{truncated');
+
+  const unreadable = new ReadBrokenStorage();
+  assert.equal(addStudentProfile('New learner', unreadable).error, 'unavailable');
+  assert.equal(recordStudentSession({ activity: 'lesson', completedItems: 1, totalItems: 1 }, unreadable).error, 'unavailable');
+  assert.equal(setStudentAssessmentStatus('s1', 'l1-short-vowels', 'secure', unreadable).error, 'unavailable');
+  assert.equal(setSelectedStudent('s1', unreadable), false);
+  assert.equal(unreadable.writes, 0);
+});
+
 test('version 2 sessions migrate to schema 3 and retain only validated concepts and aggregate outcomes', () => {
   const migrated = migrateStudentData({
     schemaVersion: 2,
@@ -114,7 +150,7 @@ test('adding and selecting students persists one global selection across store r
   assert.equal(setSelectedStudent(first.student.id, storage), true);
   assert.equal(getSelectedStudent(storage).name, 'Student A');
   assert.equal(setSelectedStudent('unknown', storage), false);
-  assert.equal(addStudentProfile('No save', new BrokenStorage()).error, 'storage');
+  assert.equal(addStudentProfile('No save', new BrokenStorage()).error, 'unavailable');
 
   for (let i = 2; i < MAX_STUDENTS; i += 1) assert.equal(addStudentProfile(`Student ${i}`, storage).ok, true);
   assert.equal(addStudentProfile('Too many', storage).error, 'limit');
@@ -145,7 +181,49 @@ test('sessions are bounded summaries and histories remain isolated by student', 
   assert.equal(getRecentStudentSessions(a.id, 5, storage).length, 1);
   assert.equal(getRecentStudentSessions(b.id, 5, storage).length, 0);
   assert.equal(getRecentStudentSessions(a.id, 0, storage).length, 0);
-  assert.equal(recordStudentSession({ activity: 'reading-words', completedItems: 1, totalItems: 1 }, new BrokenStorage()).error, 'no-student');
+  assert.equal(recordStudentSession({ activity: 'reading-words', completedItems: 1, totalItems: 1 }, new BrokenStorage()).error, 'unavailable');
+});
+
+test('stable session IDs upsert same learner and activity, but reject unsafe or mismatched reuse', () => {
+  const storage = new MemoryStorage();
+  const a = addStudentProfile('A', storage).student;
+  const b = addStudentProfile('B', storage).student;
+  const initial = recordStudentSession({ id: 'lesson-checkpoint-1', studentId: a.id, activity: 'lesson', completedItems: 1, totalItems: 3 }, storage);
+  assert.equal(initial.ok, true);
+  const update = recordStudentSession({ id: 'lesson-checkpoint-1', studentId: a.id, activity: 'lesson', completedItems: 2, totalItems: 3 }, storage);
+  assert.equal(update.ok, true);
+  assert.equal(update.session.id, 'lesson-checkpoint-1');
+  assert.equal(update.session.completedItems, 2);
+  assert.equal(getRecentStudentSessions(a.id, 20, storage).filter(item => item.id === 'lesson-checkpoint-1').length, 1);
+  assert.equal(recordStudentSession({ id: 'lesson-checkpoint-1', studentId: b.id, activity: 'lesson', completedItems: 1, totalItems: 3 }, storage).error, 'id-conflict');
+  assert.equal(recordStudentSession({ id: 'lesson-checkpoint-1', studentId: a.id, activity: 'reading-words', completedItems: 1, totalItems: 3 }, storage).error, 'id-conflict');
+  assert.equal(recordStudentSession({ id: '<script>', studentId: a.id, activity: 'lesson', completedItems: 1, totalItems: 3 }, storage).error, 'invalid-id');
+  assert.equal(recordStudentSession({ id: 'x'.repeat(101), studentId: a.id, activity: 'lesson', completedItems: 1, totalItems: 3 }, storage).error, 'invalid-id');
+  assert.equal(getRecentStudentSessions(b.id, 20, storage).length, 0);
+});
+
+test('stable session upserts ignore decreasing completion counts without changing persisted data', () => {
+  const storage = new MemoryStorage();
+  const learner = addStudentProfile('L01', storage).student;
+  assert.equal(recordStudentSession({ id: 'lesson-run-1', studentId: learner.id, activity: 'lesson', completedItems: 2, totalItems: 4 }, storage).ok, true);
+  const stale = recordStudentSession({ id: 'lesson-run-1', studentId: learner.id, activity: 'lesson', completedItems: 1, totalItems: 4 }, storage);
+  assert.equal(stale.ok, true);
+  assert.equal(stale.session.completedItems, 2);
+  assert.equal(getRecentStudentSessions(learner.id, 10, storage)[0].completedItems, 2);
+});
+
+test('recovery summaries validate pinned identity and retain only aggregate fields', () => {
+  const safe = normalizeSessionSummary({
+    id: 'lesson-run-safe', studentId: 'student_1', activity: 'lesson', completedItems: 1,
+    totalItems: 2, completedAt: '2026-04-03T12:30:00.000Z', learnerResponse: 'private response',
+  });
+  assert.deepEqual(safe, {
+    id: 'lesson-run-safe', studentId: 'student_1', activity: 'lesson', listLabel: '',
+    completedItems: 1, totalItems: 2, completedAt: '2026-04-03T12:30:00.000Z',
+  });
+  assert.equal(normalizeSessionSummary({ id: '../lesson', studentId: 'student_1', activity: 'lesson', completedItems: 0, totalItems: 1 }), null);
+  assert.equal(normalizeSessionSummary({ id: 'lesson-1', studentId: '<script>', activity: 'lesson', completedItems: 0, totalItems: 1 }), null);
+  assert.equal(normalizeSessionSummary({ id: 'lesson-1', studentId: 'student_1', activity: 'lesson', completedItems: 2, totalItems: 1 }), null);
 });
 
 test('scope assessment is validated, persisted per student, updated, and reset independently', () => {
@@ -178,4 +256,15 @@ test('first response and retry outcomes remain separate, bounded aggregates', ()
   assert.equal(data.sessions.length, 1);
   assert.deepEqual(data.sessions[0].retryOutcomeCounts, { independent: 1, supported: 0, revisit: 0 });
   assert.equal(Object.hasOwn(data.sessions[0], 'learnerResponses'), false);
+});
+
+test('assessment migration keeps the latest duplicate status and resolves timestamp ties with the last row', () => {
+  const migrated = migrateStudentData({ schemaVersion: 2, students: [{ id: 's1', name: 'Learner' }], assessment: [
+    { studentId: 's1', itemId: 'l1-short-vowels', status: 'secure', updatedAt: '2025-01-01T00:00:00.000Z' },
+    { studentId: 's1', itemId: 'l1-short-vowels', status: 'developing', updatedAt: '2026-01-01T00:00:00.000Z' },
+    { studentId: 's1', itemId: 'l1-digraphs', status: 'introduced', updatedAt: '2026-03-01T00:00:00.000Z' },
+    { studentId: 's1', itemId: 'l1-digraphs', status: 'secure', updatedAt: '2026-03-01T00:00:00.000Z' },
+  ] });
+  assert.equal(migrated.assessment.find(item => item.itemId === 'l1-short-vowels').status, 'developing');
+  assert.equal(migrated.assessment.find(item => item.itemId === 'l1-digraphs').status, 'secure');
 });

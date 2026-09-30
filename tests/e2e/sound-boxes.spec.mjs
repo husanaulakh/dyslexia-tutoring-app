@@ -37,6 +37,11 @@ test('Sound Boxes paper mode shows physical boxes and validates hostile or inval
   await page.getByRole('button', { name: 'Start practice' }).click();
   await expect(page.locator('#setupError')).toContainText('2–6 explicit phonemes');
   await expect(page.locator('#setupPanel img')).toHaveCount(0);
+  const tooManyWords = Array.from({ length: 41 }, () => 'at | /ă/ /t/').join('\n');
+  await page.locator('#customWords').fill(tooManyWords);
+  await page.getByRole('button', { name: 'Start practice' }).click();
+  await expect(page.locator('#setupError')).toContainText('no more than 40');
+  await expect(page.locator('#practicePanel')).toBeHidden();
   await page.locator('#customWords').fill('at | /ă/ /t/');
   await page.getByLabel('Response mode').selectOption('paper');
   await page.getByRole('button', { name: 'Start practice' }).click();

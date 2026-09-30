@@ -21,6 +21,13 @@ test('annotation parser accepts explicit 2–6 sound rows and rejects missing or
   assert.equal(normalizeSoundBoxItem({ word: 'seven', phonemes: ['s','e','v','e','n','t','h'] }), null);
 });
 
+test('annotation parser rejects more than forty nonblank rows instead of silently dropping the rest', () => {
+  const rows = Array.from({ length: 41 }, () => 'at | /ă/ /t/').join('\n');
+  const parsed = parseAnnotatedWords(rows);
+  assert.deepEqual(parsed.items, []);
+  assert.deepEqual(parsed.errors, ['Enter no more than 40 annotated words at a time.']);
+});
+
 test('lesson settings choose tutor-annotated IDs without deriving segmentation', () => {
   const chosen = selectSoundBoxItems({ wordIds: ['ship', 'frog'], count: 1 });
   assert.equal(chosen.length, 1);

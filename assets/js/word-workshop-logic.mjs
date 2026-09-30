@@ -92,11 +92,4 @@ export function checkVcCvAnswer(itemId, split, customVcCv = []) {
   return Boolean(item && typeof split === 'string' && split.trim().toLowerCase() === item.pattern.toLowerCase());
 }
 
-export function createOutcomeCounts() {
-  return { independent: 0, supported: 0, revisit: 0 };
-}
-
-export function recordOutcome(counts, outcome) {
-  if (!counts || !Object.hasOwn(counts, outcome) || !['independent', 'supported', 'revisit'].includes(outcome)) return counts;
-  return { ...counts, [outcome]: counts[outcome] + 1 };
-}
+export { createOutcomeCounts, recordOutcome } from './practice-outcomes.mjs';

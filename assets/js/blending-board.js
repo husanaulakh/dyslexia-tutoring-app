@@ -82,7 +82,7 @@ function renderFilters() {
     button.addEventListener('click', () => { state.lessonMode = key; ensureCurrent(); render(); }); $('#lessonFilters').append(button);
   }
 }
-function renderBoard() {
+function renderBoard(focusTileIndex = null) {
   $('#currentWord').textContent = currentWord() || '—';
   const tileLabel = state.soundMode === 'both' ? '2–6 spelling tiles' : `${state.soundMode} spelling tiles`;
   $('#modeBadge').textContent = `Practice set: ${state.lessonMode === 'both' ? 'All words' : state.lessonMode === 'previous' ? 'Review' : 'This lesson'} · ${tileLabel}`;
@@ -100,6 +100,7 @@ function renderBoard() {
   }
   $('#prompt').style.display = state.showPrompt ? 'block' : 'none';
   $('#promptText').textContent = state.currentChunks.length ? ` ${state.currentChunks.join(' · ')} → ${currentWord()}` : '';
+  if (focusTileIndex !== null) stage.querySelector(`[data-p="${focusTileIndex}"]`)?.focus({ preventScroll: true });
 }
 function cycle(position) {
   const options = valid().filter(item => sameExcept(item.chunks, state.currentChunks, position)).sort((a,b) => a.chunks[position].localeCompare(b.chunks[position]));
@@ -108,7 +109,7 @@ function cycle(position) {
     const next = options[(currentIndex + 1 + options.length) % options.length]; state.currentChunks = [...next.chunks];
     feedback(`Changed spelling tile ${position + 1}: ${next.chunks.join(' · ')} = ${next.word}`);
   } else feedback('No word in this list changes only this spelling tile. Add a matching word or choose another tile count.');
-  state.lastClicked = position; renderBoard();
+  state.lastClicked = position; renderBoard(position);
 }
 function nextWord() { const words = valid(); if (!words.length) return; const i = words.findIndex(item => chunkKey(item.chunks) === chunkKey(state.currentChunks)); state.currentChunks = [...words[(i + 1 + words.length) % words.length].chunks]; state.lastClicked = null; renderBoard(); }
 function randomWord() { const words = valid(); if (!words.length) return; state.currentChunks = [...words[Math.floor(Math.random() * words.length)].chunks]; state.lastClicked = null; renderBoard(); }

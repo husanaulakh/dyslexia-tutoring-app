@@ -65,6 +65,7 @@ Bright Steps has no server-side learner database. These local browser keys are o
 |---|---|---|
 | `bright-steps-student-progress` | `localStorage` | Student labels, activity summaries, aggregate outcomes, and assessment statuses. Schema version 3 migrates unversioned version 0, version 1, and version 2 data. |
 | `bright-steps-lesson-templates` | `localStorage` | Reusable lesson templates, including activity IDs, selected concept IDs, response modes, and allowlisted settings. |
+| `bright-steps-pending-outcomes` | `sessionStorage` | Up to 20 failed aggregate checkpoints retained for same-tab recovery; no learner response text. |
 | `bright-steps-active-lesson` | `sessionStorage` | Active template snapshot, pinned learner ID, current step index, completed step IDs, and start time for the current tab session. |
 | `bright-steps-presentation` | `localStorage` | Text size and line spacing preferences. |
 | `bright-steps-reading-word-lists` | `localStorage` | Tutor-authored Reading Words lists. |
@@ -81,3 +82,11 @@ The private paired tutor/learner display remains a later extension.
 Starter reading examples, word sets, prompts, and card artwork are original or common instructional examples. VC.CV boundaries are explicit tutor annotations, not inferred from spelling. The BC Scottish Rite Learning Centre scope map is an internal reference for the concept sequence; do not add its scans, proprietary artwork, or photographed learner work. The UFLI board is an independently linked external activity and requires internet access.
 
 The project remains static HTML, CSS, and JavaScript. No build step, deployment setting, external service, or Content Security Policy change is required for local features.
+
+## Shared persistence and maintenance
+
+`practice-outcomes.mjs` defines the accepted outcomes and immutable count updates. `practice-session.mjs` manages a stable practice run ID, checkpoints, save retries, navigation guards, and aggregate recovery. `collection-storage.mjs` reads and writes tutor collections without overwriting unreadable data or a collection changed in another tab. `activity-routing.mjs` matches each known activity on both `.html` and extensionless hosting routes.
+
+Completed tutor outcomes checkpoint immediately. Reloading preserves completed aggregates, but the activity's current card position and unfinished typed work reset. Failed checkpoints use the same ID on retry and are recovered from session storage when possible. Recovery writes only the original learner's aggregate, even if another learner is now selected. Active lessons have a persisted run ID; delayed snapshots cannot decrease a stored completion count. End lesson retains its active state when the learner cannot be verified or a save fails.
+
+If both local storage and session storage are unavailable, keep the activity open and retry after restoring storage. Browser unload protection is best effort; clearing site data or closing a tab with unsaved session-only recovery can still lose those outcomes. Stored data from a newer schema and malformed stored collections are preserved for manual recovery. Cross-device synchronization, automatic backup, and multi-tutor concurrent editing are outside the current static application's scope.

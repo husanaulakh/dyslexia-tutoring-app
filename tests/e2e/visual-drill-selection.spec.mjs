@@ -41,7 +41,10 @@ test('tutor can select a subset and mark each card once after the keyword is rev
   await expect(page.locator('#recallProgress')).toHaveText('Card 1 of 2');
   await expect(page.getByRole('button', { name: 'Independent' })).toBeDisabled();
   await expect(page.locator('#recallStage .face.back')).toHaveAttribute('aria-hidden', 'true');
-  await page.getByRole('button', { name: 'Show keyword' }).click();
+  await page.locator('#recallCard').focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('#recallCard')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#recallCard')).toBeFocused();
   await expect(page.locator('#recallStage .keyword')).toHaveText('sun');
   await expect(page.getByRole('button', { name: /Flip back to s\. Keyword sun; sound \/s\// })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Independent' })).toBeEnabled();

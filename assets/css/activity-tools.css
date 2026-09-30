@@ -5,3 +5,7 @@
 .lesson-toolbar button, .presentation-controls button, .presentation-controls select { padding: .55rem .8rem; border: 1px solid var(--brand-green); border-radius: 8px; background: white; color: var(--brand-ink); font: inherit; min-height: 44px; }
 .lesson-toolbar button:disabled { opacity: .55; }
 #lessonToolbar a { color: var(--brand-green-dark); }
+
+.practice-save-notice { margin: 1rem 0; padding: 1rem; border: 2px solid var(--brand-green); border-radius: .75rem; background: var(--brand-panel); }
+.practice-save-notice p { margin-top: 0; }
+.practice-save-notice button { min-height: 44px; padding: .6rem 1rem; max-width: 100%; white-space: normal; }
