@@ -78,6 +78,10 @@ input:focus-visible, textarea:focus-visible { border-color: var(--board-green); 
 .split-preview { margin: 6px 0; font-size: 17px; font-weight: 800; overflow-wrap: anywhere; }
 .confirm-suggestion { width: 100%; margin-top: 5px; }
 .feedback { margin-top: 12px; padding: 12px; border: 1px solid #d0dfb8; border-radius: 10px; color: #354915; background: var(--board-mint); font-size: 13px; font-weight: 700; line-height: 1.45; }
+.local-feedback { margin-top: 8px; }
+.bulk-review { margin-top: 10px; padding: 11px 12px; border: 1px solid #efcf8d; border-radius: 10px; color: #503d17; background: #fff8e8; font-size: 13px; line-height: 1.45; }
+.bulk-review strong { display: block; margin-bottom: 4px; }
+.bulk-review ul { display: grid; gap: 2px; margin: 0; padding-inline-start: 20px; }
 .dict-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .clear { min-height: 44px; border: 1px solid #dce4d2; border-radius: 10px; padding: 8px 11px; color: var(--board-ink); background: #f7f9f4; font-size: 12px; font-weight: 750; }
 .dict-list { max-height: 440px; overflow: auto; margin-top: 12px; padding-inline-end: 3px; }

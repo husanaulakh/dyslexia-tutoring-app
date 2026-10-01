@@ -9,7 +9,7 @@ test('Blending Board supports two and six spelling tiles and reports invalid man
   await page.getByLabel('Single word').fill('black');
   await page.getByLabel('Spelling tile split').fill('b l a k');
   await page.getByRole('button', { name: 'Add word' }).click();
-  await expect(page.locator('#feedback')).toContainText('Invalid spelling tile split');
+  await expect(page.locator('#singleFeedback')).toContainText('Invalid spelling tile split');
   await expect(page.locator('#dictionary')).not.toContainText('black');
   await page.getByLabel('Spelling tile split').fill('b l a ck');
   await page.getByRole('button', { name: 'Add word' }).click();
@@ -45,7 +45,7 @@ test('Blending Board requires tutor confirmation for suggested splits and preser
   await page.getByLabel('Single word').fill('whip');
   await expect(page.locator('#preview')).toContainText('whip: wh · i · p');
   await page.getByRole('button', { name: 'Add word' }).click();
-  await expect(page.locator('#feedback')).toContainText('confirm them before adding');
+  await expect(page.locator('#singleFeedback')).toContainText('confirm them before adding');
   await expect(page.locator('#dictionary')).not.toContainText('whip');
   await page.getByRole('button', { name: 'Tutor: confirm suggested split' }).click();
   await page.getByRole('button', { name: 'Add word' }).click();
@@ -65,7 +65,7 @@ test('Blending Board suggested bulk tiles require one visible tutor confirmation
   await page.locator('#toolsDisclosure .nested-disclosure').nth(1).locator('summary').click();
   await page.getByLabel('Bulk add').fill('think');
   await page.getByRole('button', { name: 'Review bulk suggestions' }).click();
-  await expect(page.locator('#feedback')).toContainText('think: th · i · n · k');
+  await expect(page.locator('#bulkPreview')).toContainText('think: th · i · n · k');
   await expect(page.locator('#dictionary')).not.toContainText('think');
   await page.getByRole('button', { name: 'Confirm suggested splits and add words' }).click();
   await expect(page.locator('#dictionary')).toContainText('think');
@@ -162,4 +162,35 @@ test('Blending Board starts uncluttered and its tutor disclosures work by keyboa
   expect(dimensions.targets.filter(target => target.height < 44)).toEqual([]);
   const scan = await new AxeBuilder({ page }).analyze();
   expect(scan.violations.map(v => ({ id: v.id, targets: v.nodes.map(n => n.target) }))).toEqual([]);
+});
+
+test('Blending Board keeps bulk split review beside confirmation on a short mobile viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/activities/blending-board.html');
+  const editor = page.locator('#toolsDisclosure > summary');
+  await editor.focus();
+  await page.keyboard.press('Enter');
+  const bulk = page.locator('#toolsDisclosure .nested-disclosure').nth(1).locator('summary');
+  await bulk.focus();
+  await page.keyboard.press('Enter');
+  await page.getByLabel('Bulk add').fill('ship whip');
+  const reviewButton = page.getByRole('button', { name: 'Review bulk suggestions' });
+  await reviewButton.focus();
+  await page.keyboard.press('Enter');
+
+  const review = page.locator('#bulkPreview');
+  const confirm = page.getByRole('button', { name: 'Confirm suggested splits and add words' });
+  await expect(review).toBeVisible();
+  await expect(review).toContainText('ship: sh · i · p');
+  await expect(review).toContainText('whip: wh · i · p');
+  await expect(confirm).toBeVisible();
+  await expect(review).toBeInViewport();
+  await expect(confirm).toBeInViewport();
+  const reviewBox = await review.boundingBox();
+  const confirmBox = await confirm.boundingBox();
+  expect(reviewBox.y + reviewBox.height).toBeLessThanOrEqual(confirmBox.y + 2);
+  await page.keyboard.press('Tab');
+  await expect(confirm).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#bulkFeedback')).toContainText('Tutor-confirmed and added 1 word; updated 1');
 });

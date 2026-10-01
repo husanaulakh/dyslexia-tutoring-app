@@ -335,6 +335,59 @@ test('saved templates keep identity on explicit update and New plan creates a se
   expect(templates.map(item => item.name)).toEqual(['Updated original', 'Separate plan']);
 });
 
+test('active lesson reload preserves a separately edited future plan and resumes the original snapshot', async ({ page }) => {
+  await page.goto('/activities/lesson-builder.html');
+  await page.getByLabel('Learner label (initials or code)').fill('L-03');
+  await page.getByRole('button', { name: 'Add student' }).click();
+  await page.getByLabel('Template name').fill('Original lesson');
+
+  await page.getByLabel('Practice activity').selectOption('reading-words');
+  await page.getByRole('button', { name: 'Add step' }).click();
+  await page.getByLabel('Practice activity').selectOption('visual-drill-cards');
+  await page.getByLabel('Activity preset').selectOption('vowels');
+  await page.getByRole('button', { name: 'Add step' }).click();
+  await page.getByLabel('Practice activity').selectOption('trace-copy-cover-close');
+  await page.getByLabel('Tutor-selected word').fill('bright');
+  await page.getByLabel('Response mode').selectOption('paper');
+  await page.getByRole('button', { name: 'Add step' }).click();
+  await expect(page.locator('#lessonSteps [data-step-id]')).toHaveCount(3);
+
+  await page.getByRole('button', { name: 'Start lesson' }).click();
+  await expect(page).toHaveURL(/reading-words\.html$/);
+  await page.locator('#lessonToolbar').getByRole('button', { name: 'Finish step' }).click();
+  await expect(page).toHaveURL(/visual-drill-cards\.html$/);
+  await expect(page.locator('#lessonToolbar')).toContainText('Step 2 of 3');
+  await page.locator('#lessonToolbar').getByText('Lesson options', { exact: true }).click();
+  await page.locator('#lessonToolbar').getByRole('link', { name: 'Review lesson plan' }).click();
+  await expect(page).toHaveURL(/lesson-builder\.html$/);
+
+  await page.getByLabel('Template name').fill('Future revision');
+  await page.getByRole('button', { name: 'Remove Trace, Copy, Cover, Close' }).click();
+  await expect(page.locator('#lessonSteps [data-step-id]')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Edit Visual Drill Cards' }).click();
+  await page.getByLabel('Response mode').selectOption('paper');
+  await page.getByRole('button', { name: 'Update step' }).click();
+  await expect(page.locator('#lessonSteps [data-step-id]').nth(1)).toContainText('Paper or tutor response');
+
+  const activeBeforeReload = await page.evaluate(() => JSON.parse(sessionStorage.getItem('bright-steps-active-lesson')));
+  await page.reload();
+  await expect(page.getByLabel('Template name')).toHaveValue('Future revision');
+  await expect(page.locator('#lessonSteps [data-step-id]')).toHaveCount(2);
+  await expect(page.locator('#lessonSteps [data-step-id]').nth(1)).toContainText('Paper or tutor response');
+  await expect(page.locator('#activeLessonNotice')).toContainText('Original lesson');
+  await expect(page.getByRole('button', { name: 'Resume lesson · Original lesson' })).toBeVisible();
+  const futureDraft = await page.evaluate(() => JSON.parse(localStorage.getItem('bright-steps-lesson-builder-draft')));
+  expect(futureDraft.name).toBe('Future revision');
+  expect(futureDraft.steps).toHaveLength(2);
+  expect(futureDraft.steps[1]).toMatchObject({ activityId: 'visual-drill-cards', responseMode: 'paper', settings: { preset: 'vowels' } });
+  expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem('bright-steps-active-lesson')))).toEqual(activeBeforeReload);
+
+  await page.getByRole('button', { name: 'Resume lesson · Original lesson' }).click();
+  await expect(page).toHaveURL(/visual-drill-cards\.html$/);
+  await expect(page.locator('#lessonToolbar')).toContainText('Step 2 of 3');
+  await expect(page.getByLabel('Card type')).toHaveValue('vowels');
+});
+
 test("What's Missing and paragraph settings appear in the saved review configuration", async ({ page }) => {
   await page.goto('/activities/lesson-builder.html');
   await page.getByLabel('Template name').fill('Flexible reading practice');

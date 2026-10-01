@@ -19,7 +19,7 @@ Before starting, the builder checks that explicit saved list and item selections
 
 Reusable templates are stored in local storage. The in-progress builder draft uses the `bright-steps-lesson-builder-draft` local-storage key and contains plan configuration only: its name, concept IDs, ordered activity settings, selected template ID, current wizard stage, and current activity-form settings. It does not store learner labels, learner response text, or assessment statuses. Draft recovery is best effort if browser storage is unavailable.
 
-An active lesson is stored separately in session storage. Its learner is pinned for the whole sequence. Returning to Lesson Builder restores the active lesson template and exposes Resume; edits in the builder apply to a future plan and do not alter that active sequence. Templates and active lesson state are local to the browser profile and current tab session, respectively.
+An active lesson is stored separately in session storage. Its learner is pinned for the whole sequence. Returning to Lesson Builder restores the valid planning draft and exposes Resume. If the draft is unavailable, the builder uses the active lesson template as a starting point. Edits in the builder apply to a future plan, survive reloads, and do not alter the running sequence. Templates and active lesson state are local to the browser profile and current tab session, respectively.
 
 “Save template” updates a template only after it has been loaded or explicitly saved under its ID. “Save as new template” creates another template and leaves the selected source template unchanged.
 

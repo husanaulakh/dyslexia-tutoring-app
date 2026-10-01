@@ -4,7 +4,7 @@ Bright Steps is a static collection of tutor-led reading practice tools. It uses
 
 ## Activities
 
-- **Lesson Builder** includes a four-stage planning wizard for the learner and plan, concepts, activities, and review. It supports editing, ordering and removing steps, draft recovery, reusable templates, and selecting saved tutor material. A lesson keeps the learner selected at start, and the shared toolbar provides Back, Finish step, Next, and End lesson navigation.
+- **Lesson Builder** includes a four-stage planning wizard for the learner and plan, concepts, activities, and review. It supports editing, drag ordering with keyboard and tap alternatives, removing steps, draft recovery, reusable templates, and selecting saved tutor material. Selected material and supported settings fill each activity when it opens. A lesson keeps the learner selected at start; the shared toolbar provides Back, Finish step, and Next, with End lesson and Review lesson plan under Lesson options.
 - **Sound Boxes** uses tutor-provided phoneme annotations for 2–6 sounds. Phoneme counts are not inferred from the number of letters. Learners can use physical counters or on-screen counters; the written word is revealed after mapping.
 - **Auditory Dictation** has the tutor say a sound or word. Learners respond on paper or type; the tutor reveals accepted spellings and records an outcome.
 - **Word Workshop** includes silent-e transformations, FLOSS/ai/ay sorting, six syllable types, and explicitly annotated VC.CV practice.
@@ -20,7 +20,7 @@ Bright Steps is a static collection of tutor-led reading practice tools. It uses
 
 Reading and recall activities record tutor-confirmed Independent, With help, or Revisit outcomes. Initial responses and retries are counted separately. Practice summaries do not change assessment status; tutors control assessment updates in Student Scope & Sequence.
 
-Shared presentation controls provide a learner view, text sizes of 100%, 125%, or 150%, and line spacing of 1.5, 1.8, or 2.0. This changes the current screen only; it does not create a private tutor view during screen sharing. The external UFLI activity keeps its own in-frame font controls. See [the activity guide](docs/activities.md) for the activity registry, local storage keys, lesson flow, and content details.
+Shared presentation controls provide a learner view, with text sizes of 100%, 125%, or 150% and line spacing of 1.5, 1.8, or 2.0 under Display options. This changes the current screen only; it does not create a private tutor view during screen sharing. The external UFLI activity keeps its own in-frame font controls. See [the activity guide](docs/activities.md) for the activity registry, local storage keys, lesson flow, and content details.
 
 ## Deploy to Vercel
 
@@ -43,3 +43,5 @@ Student labels, aggregate activity summaries, assessment statuses, lesson templa
 Completed tutor outcomes are saved as one updating aggregate per practice run, including partial practice. Failed saves offer a retry and keep aggregate-only recovery data in the current tab when session storage is available. Recovery retains the original learner ID. Unreadable or newer stored data is preserved rather than replaced. See [the production-readiness review](docs/production-readiness.md) for fixes, test coverage, and operational limits.
 
 To plan a complete session, choose **Build a lesson** on the homepage and follow the wizard. See [the tutor lesson-planning guide](docs/lesson-planning.md) for adding material, editing steps, navigating an active lesson, and reviewing completion.
+
+See [the independent tutor-experience review](docs/ux-review.md) for page feedback, corrections, and browser verification limits, and [the interface direction](design-system/bright-steps/MASTER.md) for shared layout and interaction guidance.

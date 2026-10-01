@@ -16,7 +16,7 @@
 <header class="page-heading">
   <div class="eyebrow">Blending board</div>
   <h1>Build and blend a word</h1>
-  <p class="sub">Each tile shows a spelling chunk. One tile may contain more than one letter; tile count is not a phoneme count.</p>
+  <p class="sub">Each tile shows a spelling chunk. One tile may contain more than one letter; tile count is not a phoneme count. Select a tile to change that part of the word.</p>
 </header>
 
 <div class="layout">
@@ -42,7 +42,7 @@
         <details class="nested-disclosure">
           <summary>Add one word</summary>
           <div class="nested-body">
-            <div class="control"><label for="singleWord">Single word</label><div class="input-row"><input id="singleWord" placeholder="e.g. ship" maxlength="12" autocomplete="off" autocapitalize="none" spellcheck="false"><button class="add" id="addSingle" type="button" aria-label="Add word">+</button></div></div>
+            <div class="control"><label for="singleWord">Single word</label><div class="input-row"><input id="singleWord" placeholder="e.g. ship" maxlength="12" autocomplete="off" autocapitalize="none" spellcheck="false"><button class="add" id="addSingle" type="button" aria-label="Add word">+</button></div><div class="feedback local-feedback" id="singleFeedback" role="status" aria-live="polite" hidden></div></div>
             <div class="control"><label for="soundSplit">Spelling tile split</label><input id="soundSplit" placeholder="e.g. sh i p" autocomplete="off" autocapitalize="none" spellcheck="false"><p class="small">Use one or more letters per tile, separated by spaces. For example: ship = sh · i · p. Tiles show spelling chunks, not phoneme counts.</p><div class="preview" id="preview" hidden></div></div>
             <div class="control"><label>Word group</label><div class="seg" id="singleTagSeg"></div></div>
           </div>
@@ -51,7 +51,7 @@
           <summary>Add several words</summary>
           <div class="nested-body">
             <div class="control"><label for="bulkWords">Bulk add</label><textarea id="bulkWords" placeholder="Paste words like: spin, whip, bat, pan"></textarea><p class="small">Suggested tile splits need tutor confirmation before saving.</p></div>
-            <div class="control"><label>Word group</label><div class="seg" id="bulkTagSeg"></div><p class="small">Choose whether these words are for this lesson or review.</p><button class="btn quiet wide" id="addBulk" type="button">Review bulk suggestions</button><button class="btn soft wide" id="confirmBulk" type="button" hidden>Confirm suggested splits and add words</button></div>
+            <div class="control"><label>Word group</label><div class="seg" id="bulkTagSeg"></div><p class="small">Choose whether these words are for this lesson or review.</p><button class="btn quiet wide" id="addBulk" type="button">Review bulk suggestions</button><div class="bulk-review" id="bulkPreview" role="status" aria-live="polite" hidden></div><button class="btn soft wide" id="confirmBulk" type="button" hidden>Confirm suggested splits and add words</button><div class="feedback local-feedback" id="bulkFeedback" role="status" aria-live="polite" hidden></div></div>
           </div>
         </details>
       </div>

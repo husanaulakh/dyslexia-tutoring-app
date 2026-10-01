@@ -42,6 +42,9 @@ function valid() {
 }
 function sameExcept(a, b, changedIndex) { return a.length === b.length && a.every((part, i) => i === changedIndex || part === b[i]); }
 function feedback(message) { const root = $('#feedback'); root.textContent = message; root.hidden = !message; }
+function localFeedback(id, message, announce = true) {
+  const root = $(`#${id}`); root.setAttribute('aria-live', announce ? 'polite' : 'off'); root.textContent = message; root.hidden = !message;
+}
 function backgroundForTile(tile) {
   const letters = tile.split('');
   const hasVowel = letters.some(letter => vowels.has(letter));
@@ -129,32 +132,40 @@ function preview() {
     const confirm = document.createElement('button'); confirm.type = 'button'; confirm.className = 'btn soft confirm-suggestion';
     const suggestionKey = `${word}|${chunkKey(chunks)}`; confirm.textContent = confirmedSuggestion === suggestionKey ? 'Suggested split confirmed' : 'Tutor: confirm suggested split';
     confirm.setAttribute('aria-pressed', String(confirmedSuggestion === suggestionKey));
-    confirm.addEventListener('click', () => { confirmedSuggestion = suggestionKey; feedback(`Tutor confirmed the suggested spelling tiles: ${chunks.join(' · ')}.`); preview(); }); root.append(confirm);
+    confirm.addEventListener('click', () => { confirmedSuggestion = suggestionKey; localFeedback('singleFeedback', `Tutor confirmed the suggested spelling tiles: ${chunks.join(' · ')}.`); preview(); }); root.append(confirm);
   }
 }
 function addSingle() {
   const word = clean($('#singleWord').value); const raw = $('#soundSplit').value.trim();
-  if (word.length < 2 || word.length > 12) { feedback('Add a word with 2 to 12 letters.'); return; }
+  if (word.length < 2 || word.length > 12) { localFeedback('singleFeedback', 'Add a word with 2 to 12 letters.'); return; }
   const chunks = raw ? parse(raw, word) : autoChunk(word);
-  if (!chunks || chunks.length < 2 || chunks.length > 6) { feedback('Invalid spelling tile split. Check that 2–6 tiles join to the word.'); return; }
-  if (!raw && confirmedSuggestion !== `${word}|${chunkKey(chunks)}`) { feedback('Review the suggested spelling tiles and confirm them before adding this word.'); return; }
+  if (!chunks || chunks.length < 2 || chunks.length > 6) { localFeedback('singleFeedback', 'Invalid spelling tile split. Check that 2–6 tiles join to the word.'); return; }
+  if (!raw && confirmedSuggestion !== `${word}|${chunkKey(chunks)}`) { localFeedback('singleFeedback', 'Review the suggested spelling tiles and confirm them before adding this word.'); return; }
   const key = `${word}|${chunkKey(chunks)}`; const existing = state.words.findIndex(item => `${item.word}|${chunkKey(item.chunks)}` === key);
   const item = { word, chunks, lessonTag: state.singleTag };
   if (existing >= 0) state.words[existing] = item; else state.words.push(item);
   const persisted = save(); state.currentChunks = [...chunks]; state.soundMode = String(chunks.length); state.lessonMode = state.singleTag;
   $('#singleWord').value = ''; $('#soundSplit').value = ''; confirmedSuggestion = '';
-  feedback(`${existing >= 0 ? 'Updated' : 'Added'} ${word} with ${chunks.length} spelling tiles (${lessonLabel(state.singleTag)})${persisted ? '.' : ` for this session only.${saveMessage()}`}`); render();
+  const singleResult = `${existing >= 0 ? 'Updated' : 'Added'} ${word} with ${chunks.length} spelling tiles (${lessonLabel(state.singleTag)})${persisted ? '.' : ` for this session only.${saveMessage()}`}`;
+  localFeedback('singleFeedback', singleResult, persisted);
+  if (!persisted) feedback(saveMessage().trim());
+  render();
 }
 function renderBulkPreview() {
-  const root = $('#feedback'); root.replaceChildren(); root.hidden = !pendingBulk.length;
+  const root = $('#bulkPreview'); root.replaceChildren(); root.hidden = !pendingBulk.length;
   if (!pendingBulk.length) return;
-  const text = document.createElement('p'); text.textContent = `Review these tutor-generated spelling tiles before adding: ${pendingBulk.map(item => `${item.word}: ${item.chunks.join(' · ')}`).join('; ')}`; root.append(text);
+  const heading = document.createElement('strong'); heading.textContent = 'Review suggested spelling tiles'; root.append(heading);
+  const list = document.createElement('ul');
+  for (const item of pendingBulk) { const row = document.createElement('li'); row.textContent = `${item.word}: ${item.chunks.join(' · ')}`; list.append(row); }
+  root.append(list);
+  localFeedback('bulkFeedback', '', false);
   $('#confirmBulk').hidden = false;
+  $('#confirmBulk').scrollIntoView({ block: 'nearest' });
 }
 function addBulk() {
   const words = tokenizeBulkWords($('#bulkWords').value);
   pendingBulk = words.map(word => ({ word, chunks: autoChunk(word), lessonTag: state.bulkTag })).filter(item => item.chunks.length >= 2 && item.chunks.length <= 6);
-  if (!pendingBulk.length) { feedback('No words with 2–6 suggested spelling tiles were found.'); $('#confirmBulk').hidden = true; return; }
+  if (!pendingBulk.length) { $('#bulkPreview').replaceChildren(); $('#bulkPreview').hidden = true; $('#confirmBulk').hidden = true; localFeedback('bulkFeedback', 'No words with 2–6 suggested spelling tiles were found.'); return; }
   renderBulkPreview();
 }
 function confirmBulk() {
@@ -164,8 +175,11 @@ function confirmBulk() {
     if (index >= 0) { state.words[index] = item; updated += 1; } else { state.words.push(item); added += 1; }
   }
   state.currentChunks = [...pendingBulk[0].chunks]; state.soundMode = String(state.currentChunks.length); state.lessonMode = state.bulkTag;
-  pendingBulk = []; $('#bulkWords').value = ''; $('#confirmBulk').hidden = true; const persisted = save();
-  feedback(`Tutor-confirmed and added ${added} ${added === 1 ? 'word' : 'words'}${updated ? `; updated ${updated}` : ''}${persisted ? '.' : ` for this session only.${saveMessage()}`}`); render();
+  pendingBulk = []; $('#bulkWords').value = ''; $('#confirmBulk').hidden = true; $('#bulkPreview').replaceChildren(); $('#bulkPreview').hidden = true; const persisted = save();
+  const result = `Tutor-confirmed and added ${added} ${added === 1 ? 'word' : 'words'}${updated ? `; updated ${updated}` : ''}${persisted ? '.' : ` for this session only.${saveMessage()}`}`;
+  localFeedback('bulkFeedback', result, persisted);
+  if (!persisted) feedback(saveMessage().trim());
+  render();
 }
 function renderDictionary() {
   $('#clearAll').hidden = !state.words.length;

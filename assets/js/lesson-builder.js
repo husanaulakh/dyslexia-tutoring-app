@@ -643,60 +643,70 @@ function setWizardMode(enabled) {
   showWizardStage(wizardIndex);
 }
 
+function restoreDraftState(draft) {
+  if (!draft || typeof draft !== 'object' || Array.isArray(draft) || !Array.isArray(draft.steps)
+    || draft.steps.length > MAX_LESSON_STEPS) return false;
+  const placeholder = { id: 'draft-placeholder', activityId: 'reading-words', responseMode: 'screen', settings: {} };
+  const rawSteps = draft.steps.length ? draft.steps : [placeholder];
+  const clean = normalizeLessonTemplate({
+    id: 'lesson-draft',
+    name: typeof draft.name === 'string' && draft.name.trim() ? draft.name : 'Planning draft',
+    conceptIds: draft.conceptIds,
+    steps: rawSteps,
+  });
+  if (!clean || clean.steps.length !== rawSteps.length) return false;
+
+  const restoredSteps = draft.steps.length ? clean.steps : [];
+  selectedTemplateId = typeof draft.templateId === 'string' && templates.some(item => item.id === draft.templateId) ? draft.templateId : '';
+  wizardMode = draft.wizardMode === true;
+  wizardIndex = Number.isInteger(draft.wizardIndex) ? Math.max(0, Math.min(WIZARD_STAGES.length - 1, draft.wizardIndex)) : 0;
+  $('#templateName').value = typeof draft.name === 'string' ? draft.name.slice(0, 60) : '';
+  const concepts = new Set(clean.conceptIds);
+  document.querySelectorAll('[data-concept-id]').forEach(input => { input.checked = concepts.has(input.value); });
+  steps = restoredSteps;
+  renderSteps();
+
+  const form = draft.form;
+  if (form && typeof form === 'object' && PRACTICE_ACTIVITIES.some(item => item.id === form.activityId && item.available)) {
+    activitySelect.value = form.activityId;
+    populatePresets();
+    if ([...presetSelect.options].some(option => option.value === form.preset)) presetSelect.value = form.preset;
+    populateItemPicker(form.activityId);
+    if (['paper', 'screen'].includes(form.responseMode) && [...responseMode.options].some(option => option.value === form.responseMode)) responseMode.value = form.responseMode;
+    if ([...wordListSelect.options].some(option => option.value === form.listId)) wordListSelect.value = form.listId;
+    if (Array.isArray(form.selectedIds)) for (const option of itemSelection.options) option.selected = form.selectedIds.includes(option.value);
+    $('#tutorWord').value = typeof form.word === 'string' ? form.word.slice(0, 24) : '';
+    $('#questionMode').value = form.questionMode === 'none' ? 'none' : 'oral';
+    $('#rereadMode').value = form.rereadMode === 'needs-practice' ? 'needs-practice' : 'all';
+  }
+  $('#missingCount').value = Math.max(1, Math.min(24, Number(draft.form?.missingCount) || 10));
+  $('#missingPosition').value = ['first', 'middle', 'last', 'random'].includes(draft.form?.missingPosition) ? draft.form.missingPosition : 'middle';
+  $('#boardTileCount').value = ['0', '2', '3', '4', '5', '6'].includes(String(draft.form?.boardTileCount)) ? String(draft.form.boardTileCount) : '0';
+  if (draft.form?.activityId === 'blending-board') {
+    populateItemPicker('blending-board');
+    if (Array.isArray(draft.form.selectedIds)) for (const option of itemSelection.options) option.selected = draft.form.selectedIds.includes(option.value);
+  }
+  if (templates.some(item => item.id === selectedTemplateId)) $('#savedTemplates').value = selectedTemplateId;
+  setWizardMode(wizardMode);
+  return true;
+}
+
 function restoreDraftOrActive() {
   const activeLesson = loadActiveLesson().active;
-  if (activeLesson) {
-    try {
-      const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null');
-      if (draft && typeof draft === 'object') {
-        wizardMode = draft.wizardMode === true;
-        wizardIndex = Number.isInteger(draft.wizardIndex) ? Math.max(0, Math.min(WIZARD_STAGES.length - 1, draft.wizardIndex)) : 0;
-      }
-    } catch { /* Keep quick edit as the fallback. */ }
-    showTemplate(activeLesson.template);
-    if (templates.some(item => item.id === activeLesson.template.id)) $('#savedTemplates').value = activeLesson.template.id;
-    setWizardMode(wizardMode);
-    return;
-  }
+  active = activeLesson;
+  let draft = null;
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return;
-    const draft = JSON.parse(raw);
-    if (!draft || typeof draft !== 'object') return;
-    selectedTemplateId = typeof draft.templateId === 'string' && templates.some(item => item.id === draft.templateId) ? draft.templateId : '';
-    wizardMode = draft.wizardMode === true;
-    wizardIndex = Number.isInteger(draft.wizardIndex) ? Math.max(0, Math.min(WIZARD_STAGES.length - 1, draft.wizardIndex)) : 0;
-    const placeholder = { id: 'draft-placeholder', activityId: 'reading-words', responseMode: 'screen', settings: {} };
-    const clean = normalizeLessonTemplate({ id: 'lesson-draft', name: draft.name || 'Planning draft', conceptIds: draft.conceptIds, steps: [...(Array.isArray(draft.steps) ? draft.steps : []), placeholder] });
-    if (!clean) return;
-    $('#templateName').value = typeof draft.name === 'string' ? draft.name.slice(0, 60) : '';
-    const concepts = new Set(clean.conceptIds);
-    document.querySelectorAll('[data-concept-id]').forEach(input => { input.checked = concepts.has(input.value); });
-    steps = clean.steps.filter(step => step.id !== 'draft-placeholder');
-    renderSteps();
-    const form = draft.form;
-    if (form && typeof form === 'object' && PRACTICE_ACTIVITIES.some(item => item.id === form.activityId && item.available)) {
-      activitySelect.value = form.activityId;
-      populatePresets();
-      if ([...presetSelect.options].some(option => option.value === form.preset)) presetSelect.value = form.preset;
-      populateItemPicker(form.activityId);
-      if (['paper', 'screen'].includes(form.responseMode) && [...responseMode.options].some(option => option.value === form.responseMode)) responseMode.value = form.responseMode;
-      if ([...wordListSelect.options].some(option => option.value === form.listId)) wordListSelect.value = form.listId;
-      if (Array.isArray(form.selectedIds)) for (const option of itemSelection.options) option.selected = form.selectedIds.includes(option.value);
-      $('#tutorWord').value = typeof form.word === 'string' ? form.word.slice(0, 24) : '';
-      $('#questionMode').value = form.questionMode === 'none' ? 'none' : 'oral';
-      $('#rereadMode').value = form.rereadMode === 'needs-practice' ? 'needs-practice' : 'all';
-    }
-    $('#missingCount').value = Math.max(1, Math.min(24, Number(draft.form?.missingCount) || 10));
-    $('#missingPosition').value = ['first', 'middle', 'last', 'random'].includes(draft.form?.missingPosition) ? draft.form.missingPosition : 'middle';
-    $('#boardTileCount').value = ['0', '2', '3', '4', '5', '6'].includes(String(draft.form?.boardTileCount)) ? String(draft.form.boardTileCount) : '0';
-    if (draft.form?.activityId === 'blending-board') {
-      populateItemPicker('blending-board');
-      if (Array.isArray(draft.form.selectedIds)) for (const option of itemSelection.options) option.selected = draft.form.selectedIds.includes(option.value);
-    }
-    if (templates.some(item => item.id === selectedTemplateId)) $('#savedTemplates').value = selectedTemplateId;
-    setWizardMode(wizardMode);
-  } catch { /* Ignore malformed drafts without changing stored plans. */ }
+    if (raw) draft = JSON.parse(raw);
+  } catch { /* Fall back to the active lesson snapshot if the draft cannot be read. */ }
+  if (restoreDraftState(draft)) return;
+  if (!activeLesson) return;
+
+  wizardMode = false;
+  wizardIndex = 0;
+  showTemplate(activeLesson.template);
+  if (templates.some(item => item.id === activeLesson.template.id)) $('#savedTemplates').value = activeLesson.template.id;
+  setWizardMode(wizardMode);
 }
 
 function syncTemplatePicker() {
