@@ -17,6 +17,11 @@
   --brand-warning: #9a5b0a;
   --brand-warning-soft: #fff0d6;
   --brand-shadow: 0 14px 36px rgba(31, 48, 65, .07);
+  --ui-radius: 1.25rem;
+  --ui-control-line: #88958a;
+  --ui-mint: #eef5e9;
+  --ui-peach: #fff0dc;
+  --ui-motion: 160ms;
 
   --paper: var(--brand-paper);
   --bg: var(--brand-paper);
@@ -42,6 +47,8 @@
   --navy: var(--brand-navy);
   --shadow: var(--brand-shadow);
 }
+
+button, input, select, textarea, summary { touch-action: manipulation; }
 
 :focus-visible {
   outline: 3px solid var(--brand-green-dark) !important;

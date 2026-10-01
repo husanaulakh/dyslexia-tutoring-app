@@ -7,7 +7,7 @@
   border-radius: 1rem;
   background: var(--surface, #fff);
   color: var(--ink, #17372f);
-  box-shadow: 0 8px 24px rgb(23 55 47 / 7%);
+  box-shadow: 0 4px 18px rgb(23 36 58 / 3%);
 }
 
 .student-tracker__title,
@@ -46,11 +46,11 @@
   outline-offset: 2px;
 }
 
-.student-tracker__form { display: grid; gap: 0.55rem; }
+.student-tracker__form { display: grid; gap: 0.75rem; }
 
 .student-tracker__add {
   justify-self: start;
-  min-height: 2.6rem;
+  min-height: 44px;
   padding: 0.55rem 0.9rem;
   border: 0;
   border-radius: 0.65rem;
@@ -84,3 +84,7 @@
   overflow-wrap: anywhere;
 }
 .student-tracker__empty { color: #526055; }
+
+@media (min-width: 480px) {
+  .student-tracker__form { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+}

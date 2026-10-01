@@ -20,7 +20,9 @@ test('Lesson Builder creates an ordered template, reloads it, starts and resumes
   await page.getByLabel('Word/list selection').selectOption('list-1');
   await page.getByRole('button', { name: 'Add step' }).click();
   await expect(page.locator('#lessonSteps [data-step-id]')).toHaveCount(2);
-  await page.getByRole('button', { name: 'Move Reading Words up' }).click();
+  await page.locator('#lessonSteps .step-reorder-handle').first().click();
+  await expect(page.locator('#lessonSteps .step-reorder-handle').first()).toHaveAttribute('aria-expanded', 'true');
+  await page.getByRole('button', { name: 'Move Visual Drill Cards later in the lesson' }).click();
   await expect(page.locator('#lessonSteps [data-step-id]').first()).toContainText('Reading Words');
 
   await page.getByRole('button', { name: 'Save template' }).click();
@@ -49,6 +51,145 @@ test('Lesson Builder creates an ordered template, reloads it, starts and resumes
   await page.getByRole('button', { name: 'Resume lesson · Short vowel review' }).click();
   await expect(page).toHaveURL(/\/activities\/visual-drill-cards\.html$/);
   await expect(page.locator('#lessonToolbar')).toContainText('Step 2 of 2');
+});
+
+test('practice steps reorder by pointer, stable keyboard controls, and click menu; cancellation restores order', async ({ page }) => {
+  await page.goto('/activities/lesson-builder.html');
+  const addActivity = async id => {
+    await page.getByLabel('Practice activity').selectOption(id);
+    await page.getByRole('button', { name: 'Add step' }).click();
+  };
+  await addActivity('reading-words');
+  await addActivity('trace-copy-cover-close');
+  await addActivity('paragraph-reading');
+
+  const rows = page.locator('#lessonSteps [data-step-id]');
+  const originalIds = await rows.evaluateAll(items => items.map(item => item.dataset.stepId));
+  const firstHandle = page.locator('#lessonSteps .step-reorder-handle').nth(0);
+  const lastRow = rows.nth(2);
+  const start = await firstHandle.boundingBox();
+  const end = await lastRow.boundingBox();
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(end.x + end.width / 2, end.y + end.height - 2, { steps: 6 });
+  await page.mouse.up();
+  await expect(rows.first()).toContainText('Trace, Copy, Cover, Close');
+  const draggedIds = await rows.evaluateAll(items => items.map(item => item.dataset.stepId));
+  expect(new Set(draggedIds)).toEqual(new Set(originalIds));
+  await expect(page.locator('#reorderStatus')).toContainText('moved to position');
+
+  // A click/tap opens the non-drag alternative, with accessible state and bounds.
+  const lastHandle = page.locator('#lessonSteps .step-reorder-handle').last();
+  await lastHandle.click();
+  await expect(lastHandle).toHaveAttribute('aria-expanded', 'true');
+  const menuId = await lastHandle.getAttribute('aria-controls');
+  const menu = page.locator(`#${menuId}`);
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('button', { name: /Move .* later in the lesson/ })).toBeDisabled();
+  await menu.getByRole('button', { name: /Move .* earlier in the lesson/ }).click();
+  await expect(page.locator('#lessonSteps .step-reorder-handle').last()).toHaveAttribute('aria-expanded', 'false');
+
+  // Keyboard movement uses stable step IDs and safely reports bounds.
+  const keyboardHandle = page.locator('#lessonSteps .step-reorder-handle').first();
+  const keyboardId = await page.locator('#lessonSteps [data-step-id]').first().getAttribute('data-step-id');
+  await keyboardHandle.focus();
+  await page.keyboard.press('ArrowUp');
+  await expect(page.locator('#reorderStatus')).toContainText('already the first step');
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('#lessonSteps [data-step-id]').nth(1)).toHaveAttribute('data-step-id', keyboardId);
+
+  // Escape during an active pointer drag restores the exact starting order.
+  const beforeCancel = await rows.evaluateAll(items => items.map(item => item.dataset.stepId));
+  const handle = page.locator('#lessonSteps .step-reorder-handle').first();
+  const target = rows.nth(2);
+  const from = await handle.boundingBox();
+  const to = await target.boundingBox();
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height - 2, { steps: 5 });
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  await expect(page.locator('#reorderStatus')).toContainText('original order was restored');
+  await expect(rows.evaluateAll(items => items.map(item => item.dataset.stepId))).resolves.toEqual(beforeCancel);
+  await expect(page.locator('#lessonSteps .step-reorder-handle[aria-expanded="true"]')).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.locator('#lessonSteps [data-step-id]').evaluateAll(items => items.map(item => item.dataset.stepId))).resolves.toEqual(beforeCancel);
+});
+
+test('after a drag, Edit and Remove still act on the step ID shown in that row', async ({ page }) => {
+  await page.goto('/activities/lesson-builder.html');
+  for (const id of ['reading-words', 'trace-copy-cover-close', 'paragraph-reading']) {
+    await page.getByLabel('Practice activity').selectOption(id);
+    await page.getByRole('button', { name: 'Add step' }).click();
+  }
+  const rows = page.locator('#lessonSteps [data-step-id]');
+  const trace = page.locator('#lessonSteps [data-step-id]').filter({ hasText: 'Trace, Copy, Cover, Close' });
+  const traceId = await trace.getAttribute('data-step-id');
+  const reading = page.locator('#lessonSteps [data-step-id]').filter({ hasText: 'Reading Words' });
+  const readingId = await reading.getAttribute('data-step-id');
+  const source = await page.locator('#lessonSteps .step-reorder-handle').first().boundingBox();
+  const target = await rows.nth(2).boundingBox();
+  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(target.x + target.width / 2, target.y + target.height - 2, { steps: 5 });
+  await page.mouse.up();
+  await expect(rows.first()).toContainText('Trace, Copy, Cover, Close');
+
+  await page.getByRole('button', { name: 'Edit Trace, Copy, Cover, Close' }).click();
+  await expect(page.getByLabel('Tutor-selected word')).toBeVisible();
+  await page.getByLabel('Tutor-selected word').fill('splash');
+  await page.getByRole('button', { name: 'Update step' }).click();
+  await expect(page.locator(`[data-step-id="${traceId}"]`)).toContainText('Tutor word: splash');
+  await expect(page.locator(`[data-step-id="${traceId}"]`)).toHaveCount(1);
+
+  await page.getByRole('button', { name: 'Remove Reading Words' }).click();
+  await expect(page.locator(`[data-step-id="${readingId}"]`)).toHaveCount(0);
+  await expect(rows).toHaveCount(2);
+  await expect(rows).toContainText(['Trace, Copy, Cover, Close', 'Paragraph Reading']);
+});
+
+test('touch drag reorders with one pointer while the tap menu remains available', async ({ page }) => {
+  await page.goto('/activities/lesson-builder.html');
+  for (const id of ['reading-words', 'trace-copy-cover-close', 'paragraph-reading']) {
+    await page.getByLabel('Practice activity').selectOption(id);
+    await page.getByRole('button', { name: 'Add step' }).click();
+  }
+  const handles = page.locator('#lessonSteps .step-reorder-handle');
+  const from = await handles.nth(0).boundingBox();
+  const to = await page.locator('#lessonSteps [data-step-id]').nth(2).boundingBox();
+  const session = await page.context().newCDPSession(page);
+  const touch = (x, y) => ({ x: Math.round(x), y: Math.round(y), id: 1, radiusX: 2, radiusY: 2, force: 1 });
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch(from.x + from.width / 2, from.y + from.height / 2)] });
+  await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [touch(to.x + to.width / 2, to.y + to.height - 2)] });
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await session.detach();
+  await expect(page.locator('#lessonSteps [data-step-id]').first()).toContainText('Trace, Copy, Cover, Close');
+  await expect(page.locator('#lessonSteps .step-reorder-handle').first()).toHaveAttribute('aria-expanded', 'false');
+  await page.locator('#lessonSteps .step-reorder-handle').first().click();
+  await expect(page.locator('#lessonSteps .step-reorder-handle').first()).toHaveAttribute('aria-expanded', 'true');
+});
+
+test('edge auto-scroll continues while dragging a long practice sequence without further pointer movement', async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 650 });
+  await page.goto('/activities/lesson-builder.html');
+  for (let i = 0; i < 10; i += 1) {
+    await page.getByLabel('Practice activity').selectOption(i % 2 ? 'trace-copy-cover-close' : 'reading-words');
+    await page.getByRole('button', { name: 'Add step' }).click();
+  }
+  const handles = page.locator('#lessonSteps .step-reorder-handle');
+  await handles.first().scrollIntoViewIfNeeded();
+  const from = await handles.first().boundingBox();
+  const before = await page.evaluate(() => window.scrollY);
+  const x = from.x + from.width / 2;
+  await page.mouse.move(x, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(x, 640, { steps: 4 });
+  await page.waitForTimeout(350);
+  const after = await page.evaluate(() => window.scrollY);
+  await page.mouse.up();
+  expect(after).toBeGreaterThan(before + 10);
+  await expect(page.locator('#reorderStatus')).toContainText('moved to position');
 });
 
 test('Lesson Builder rejects hostile text safely, handles storage failures, keyboard use, and narrow layout', async ({ page }) => {

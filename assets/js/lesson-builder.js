@@ -12,6 +12,7 @@ import {
   loadActiveLesson, loadLessonTemplates, MAX_LESSON_STEPS, MAX_LESSON_TEMPLATES,
   normalizeLessonTemplate, saveLessonTemplates, startLesson,
 } from './lesson-context.mjs';
+import { moveStepBy, placeStepRelative, restoreStepOrder } from './lesson-reorder.mjs';
 
 const soundBoxWords = getActivity('sound-boxes')?.available
   ? (await import('../../data/sound-boxes-words.mjs')).soundBoxWords : [];
@@ -43,6 +44,9 @@ let selectedTemplateId = '';
 let editingStepId = '';
 let wizardMode = false;
 let wizardIndex = 0;
+let pointerReorder = null;
+let suppressHandleClick = '';
+let autoScrollFrame = 0;
 
 function make(tag, className = '', value = '') {
   const element = document.createElement(tag);
@@ -241,15 +245,152 @@ function currentSettings() {
   return settings;
 }
 
-function moveItem(index, offset) {
-  const next = index + offset;
-  if (next < 0 || next >= steps.length) return;
-  [steps[index], steps[next]] = [steps[next], steps[index]];
+function reorderAnnouncement(stepId, index) {
+  const step = steps[index];
+  const name = getActivity(step?.activityId)?.label ?? 'Practice step';
+  $('#reorderStatus').textContent = `${name} moved to position ${index + 1} of ${steps.length}.`;
+}
+
+function moveItem(stepId, offset) {
+  const result = moveStepBy(steps, stepId, offset);
+  if (!result.moved) {
+    const index = result.index;
+    const name = getActivity(steps[index]?.activityId)?.label ?? 'Practice step';
+    $('#reorderStatus').textContent = index === 0
+      ? `${name} is already the first step.`
+      : `${name} is already the last step.`;
+    return;
+  }
+  steps = result.steps;
   renderSteps();
-  const moved = stepList.querySelector(`[data-step-id="${CSS.escape(steps[next].id)}"]`);
-  moved?.focus();
-  setStatus(`${getActivity(steps[next].activityId).label} moved to step ${next + 1}.`);
-  persistDraft();
+  const moved = stepList.querySelector(`[data-step-id="${CSS.escape(stepId)}"]`);
+  moved?.querySelector('.step-reorder-handle')?.focus();
+  reorderAnnouncement(stepId, result.index);
+}
+
+function closeReorderMenu(item, focusHandle = false) {
+  if (!item) return;
+  const handle = item.querySelector('.step-reorder-handle');
+  const menu = item.querySelector('.step-reorder-menu');
+  if (menu) menu.hidden = true;
+  handle?.setAttribute('aria-expanded', 'false');
+  if (focusHandle) handle?.focus();
+}
+
+function syncStepDOMOrder() {
+  for (const step of steps) {
+    const item = [...stepList.children].find(child => child.dataset.stepId === step.id);
+    if (item) stepList.append(item);
+  }
+  if (pointerReorder?.dragged) {
+    try { pointerReorder.handle.setPointerCapture(pointerReorder.pointerId); } catch { /* Document listeners remain active. */ }
+  }
+}
+
+function beginPointerReorder(event) {
+  if (pointerReorder) return;
+  suppressHandleClick = '';
+  const handle = event.target.closest('.step-reorder-handle');
+  if (!handle || event.button !== 0) return;
+  const item = handle.closest('[data-step-id]');
+  if (!item) return;
+  pointerReorder = {
+    pointerId: event.pointerId,
+    stepId: item.dataset.stepId,
+    originalIds: steps.map(step => step.id),
+    startX: event.clientX,
+    startY: event.clientY,
+    dragged: false,
+    handle,
+    clientX: event.clientX,
+    clientY: event.clientY,
+  };
+}
+
+function reorderAtPoint(drag) {
+  const source = stepList.querySelector(`[data-step-id="${CSS.escape(drag.stepId)}"]`);
+  source?.classList.add('is-dragging');
+  const target = document.elementFromPoint(drag.clientX, drag.clientY)?.closest('#lessonSteps [data-step-id]');
+  if (!target || target.dataset.stepId === drag.stepId) return;
+  const rect = target.getBoundingClientRect();
+  const after = drag.clientY >= rect.top + rect.height / 2;
+  const result = placeStepRelative(steps, drag.stepId, target.dataset.stepId, after);
+  if (result.moved) {
+    steps = result.steps;
+    syncStepDOMOrder();
+  }
+}
+
+function stopEdgeScroll() {
+  if (autoScrollFrame) cancelAnimationFrame(autoScrollFrame);
+  autoScrollFrame = 0;
+}
+
+function edgeScrollFrame() {
+  autoScrollFrame = 0;
+  const drag = pointerReorder;
+  if (!drag?.dragged) return;
+  const edge = 72;
+  const amount = drag.clientY < edge ? -4 : drag.clientY > window.innerHeight - edge ? 4 : 0;
+  if (!amount) return;
+  window.scrollBy(0, amount);
+  reorderAtPoint(drag);
+  autoScrollFrame = requestAnimationFrame(edgeScrollFrame);
+}
+
+function updatePointerReorder(event) {
+  const drag = pointerReorder;
+  if (!drag || drag.pointerId !== event.pointerId) return;
+  drag.clientX = event.clientX;
+  drag.clientY = event.clientY;
+  if (!drag.dragged && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 8) return;
+  if (!drag.dragged) {
+    drag.dragged = true;
+    try { drag.handle.setPointerCapture(event.pointerId); } catch { /* Document listeners still track the pointer. */ }
+  }
+  reorderAtPoint(drag);
+  const nearEdge = drag.clientY < 72 || drag.clientY > window.innerHeight - 72;
+  if (nearEdge && !autoScrollFrame) autoScrollFrame = requestAnimationFrame(edgeScrollFrame);
+  else if (!nearEdge) stopEdgeScroll();
+}
+
+function finishPointerReorder(event, canceled = false) {
+  const drag = pointerReorder;
+  if (!drag || (event && drag.pointerId !== event.pointerId)) return;
+  stopEdgeScroll();
+  pointerReorder = null;
+  const source = stepList.querySelector(`[data-step-id="${CSS.escape(drag.stepId)}"]`);
+  source?.classList.remove('is-dragging');
+  if (canceled && drag.dragged) {
+    steps = restoreStepOrder(steps, drag.originalIds);
+    renderSteps();
+    stepList.querySelector(`[data-step-id="${CSS.escape(drag.stepId)}"] .step-reorder-handle`)?.focus();
+    $('#reorderStatus').textContent = 'Reorder canceled. The original order was restored.';
+    return;
+  }
+  if (drag.dragged) {
+    const index = steps.findIndex(step => step.id === drag.stepId);
+    updateReorderControls();
+    const handle = stepList.querySelector(`[data-step-id="${CSS.escape(drag.stepId)}"] .step-reorder-handle`);
+    handle?.focus();
+    reorderAnnouncement(drag.stepId, index);
+    suppressHandleClick = drag.stepId;
+    renderReview();
+    persistDraft();
+  }
+}
+
+function updateReorderControls() {
+  steps.forEach((step, index) => {
+    const item = stepList.querySelector(`[data-step-id="${CSS.escape(step.id)}"]`);
+    const label = getActivity(step.activityId)?.label ?? 'practice step';
+    const handle = item?.querySelector('.step-reorder-handle');
+    if (handle) handle.setAttribute('aria-label', `Reorder ${label}, step ${index + 1} of ${steps.length}. Drag to move, or select for move options.`);
+    const earlier = item?.querySelector('.step-reorder-menu button:first-child');
+    const later = item?.querySelector('.step-reorder-menu button:last-child');
+    if (earlier) earlier.disabled = index === 0;
+    if (later) later.disabled = index === steps.length - 1;
+  });
 }
 
 function renderSteps() {
@@ -261,6 +402,46 @@ function renderSteps() {
     item.dataset.stepId = step.id;
     item.tabIndex = -1;
     const row = make('div', 'step-row');
+    const handle = make('button', 'step-reorder-handle');
+    handle.type = 'button';
+    handle.setAttribute('aria-label', `Reorder ${activity?.label ?? 'practice step'}, step ${index + 1} of ${steps.length}. Drag to move, or select for move options.`);
+    handle.setAttribute('aria-expanded', 'false');
+    handle.setAttribute('aria-controls', `reorder-menu-${step.id}`);
+    handle.setAttribute('aria-describedby', 'stepReorderHelp');
+    handle.append(make('span', 'step-reorder-icon', '⋮⋮'));
+    const menu = make('div', 'step-reorder-menu');
+    menu.id = `reorder-menu-${step.id}`;
+    menu.hidden = true;
+    menu.setAttribute('role', 'group');
+    menu.setAttribute('aria-label', `Move ${activity?.label ?? 'practice step'} in the lesson`);
+    const earlier = make('button', 'btn secondary', 'Move earlier');
+    earlier.type = 'button';
+    earlier.disabled = index === 0;
+    earlier.setAttribute('aria-label', `Move ${activity?.label ?? 'practice step'} earlier in the lesson`);
+    earlier.addEventListener('click', () => { closeReorderMenu(item, true); moveItem(step.id, -1); });
+    const later = make('button', 'btn secondary', 'Move later');
+    later.type = 'button';
+    later.disabled = index === steps.length - 1;
+    later.setAttribute('aria-label', `Move ${activity?.label ?? 'practice step'} later in the lesson`);
+    later.addEventListener('click', () => { closeReorderMenu(item, true); moveItem(step.id, 1); });
+    menu.append(earlier, later);
+    handle.addEventListener('click', () => {
+      if (suppressHandleClick === step.id) { suppressHandleClick = ''; return; }
+      const opening = menu.hidden;
+      menu.hidden = !opening;
+      handle.setAttribute('aria-expanded', String(opening));
+    });
+    handle.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') suppressHandleClick = '';
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        closeReorderMenu(item);
+        moveItem(step.id, event.key === 'ArrowUp' ? -1 : 1);
+      } else if (event.key === 'Escape' && !menu.hidden) {
+        event.preventDefault();
+        closeReorderMenu(item, true);
+      }
+    });
     const info = make('div', 'step-info');
     const title = make('span', 'step-title', activity?.label ?? 'Practice activity');
     const detailParts = [step.responseMode === 'paper' ? 'Paper or tutor response' : 'On screen'];
@@ -284,26 +465,48 @@ function renderSteps() {
     if (step.activityId === 'blending-board' && step.settings.tileCount) detailParts.push(`${step.settings.tileCount} spelling tiles`);
     info.append(title, make('span', 'step-description', detailParts.join(' · ')));
     const buttons = make('div', 'step-actions');
-    const up = make('button', 'btn secondary', 'Move up');
-    up.type = 'button'; up.disabled = index === 0; up.setAttribute('aria-label', `Move ${activity?.label ?? 'step'} up`);
-    up.addEventListener('click', () => moveItem(index, -1));
-    const down = make('button', 'btn secondary', 'Move down');
-    down.type = 'button'; down.disabled = index === steps.length - 1; down.setAttribute('aria-label', `Move ${activity?.label ?? 'step'} down`);
-    down.addEventListener('click', () => moveItem(index, 1));
     const edit = make('button', 'btn secondary', 'Edit');
     edit.type = 'button'; edit.setAttribute('aria-label', `Edit ${activity?.label ?? 'step'}`);
-    edit.addEventListener('click', () => editStep(index));
+    edit.addEventListener('click', () => {
+      const currentIndex = steps.findIndex(current => current.id === step.id);
+      if (currentIndex >= 0) editStep(currentIndex);
+    });
     const remove = make('button', 'btn danger', 'Remove');
     remove.type = 'button'; remove.setAttribute('aria-label', `Remove ${activity?.label ?? 'step'}`);
-    remove.addEventListener('click', () => { if (editingStepId === step.id) cancelStepEdit(); steps.splice(index, 1); renderSteps(); });
-    buttons.append(up, down, edit, remove);
-    row.append(info, buttons);
-    item.append(row);
+    remove.addEventListener('click', () => {
+      const currentIndex = steps.findIndex(current => current.id === step.id);
+      if (currentIndex < 0) return;
+      if (editingStepId === step.id) cancelStepEdit();
+      steps.splice(currentIndex, 1);
+      renderSteps();
+    });
+    buttons.append(edit, remove);
+    row.append(handle, info, buttons);
+    item.append(row, menu);
     stepList.append(item);
   });
   renderReview();
   persistDraft();
 }
+
+stepList.addEventListener('pointerdown', beginPointerReorder);
+document.addEventListener('pointermove', updatePointerReorder);
+document.addEventListener('pointerup', event => finishPointerReorder(event));
+document.addEventListener('pointercancel', event => finishPointerReorder(event, true));
+document.addEventListener('lostpointercapture', event => {
+  const drag = pointerReorder;
+  if (!drag || drag.pointerId !== event.pointerId) return;
+  queueMicrotask(() => {
+    if (pointerReorder === drag && !drag.handle.hasPointerCapture?.(drag.pointerId)) finishPointerReorder(event, true);
+  });
+});
+window.addEventListener('blur', () => finishPointerReorder(null, true));
+document.addEventListener('keydown', event => {
+  if (pointerReorder && event.key === 'Escape') {
+    event.preventDefault();
+    finishPointerReorder(null, true);
+  }
+});
 
 function persistDraft() {
   const name = $('#templateName')?.value ?? '';

@@ -19,7 +19,7 @@
     <header class="lesson-header">
       <div class="eyebrow">Tutor planning</div>
       <h1>Lesson Builder</h1>
-      <p>Choose a learner, connect practice to concepts, and arrange a short sequence. Templates stay in this browser.</p>
+      <p>Choose a learner and build today’s practice. Selected material and settings open with each activity. Templates stay in this browser.</p>
     </header>
 
     <button class="btn secondary wizard-toggle" id="wizardToggle" type="button" aria-expanded="false" aria-controls="planningWizard">Use planning wizard</button>
@@ -55,7 +55,7 @@
 
     <section id="wizardStage3" class="wizard-stage">
     <section class="panel add-step-panel" aria-labelledby="add-step-heading">
-      <div class="section-heading"><div><h2 id="add-step-heading">Add a practice step</h2><p>Choose an activity and how the learner will respond.</p></div></div>
+      <div class="section-heading"><div><h2 id="add-step-heading">Choose activities</h2><p>Choose an activity, its material, and how the learner will respond.</p></div></div>
       <div class="step-builder">
         <div class="field"><label for="activitySelect">Practice activity</label><select id="activitySelect"></select></div>
         <div class="field"><label for="responseMode">Response mode</label><select id="responseMode"></select></div>
@@ -76,9 +76,10 @@
     </section>
 
     <section class="panel sequence-panel" aria-labelledby="sequence-heading">
-      <div class="section-heading"><div><h2 id="sequence-heading">Practice sequence</h2><p>Use the buttons to change the order. Activities open one at a time.</p></div></div>
+      <div class="section-heading"><div><h2 id="sequence-heading">Practice sequence</h2><p id="stepReorderHelp">Drag the grip to reorder, or select it for move options. Keyboard: focus the grip and press Up or Down.</p></div></div>
       <ol id="lessonSteps" class="lesson-steps" aria-label="Ordered practice steps"></ol>
       <p id="emptySteps" class="empty-note">No steps yet. Add an activity above.</p>
+      <p id="reorderStatus" class="reorder-status" role="status" aria-live="polite" aria-atomic="true"></p>
     </section>
     </section>
 
