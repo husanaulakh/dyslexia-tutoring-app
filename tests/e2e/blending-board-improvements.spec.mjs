@@ -4,6 +4,8 @@ import AxeBuilder from '@axe-core/playwright';
 test('Blending Board supports two and six spelling tiles and reports invalid manual splits', async ({ page }) => {
   await page.goto('/activities/blending-board.html');
   await expect(page.locator('#currentWord')).toHaveText('fan');
+  await page.locator('#toolsDisclosure > summary').click();
+  await page.locator('#toolsDisclosure .nested-disclosure').nth(0).locator('summary').click();
   await page.getByLabel('Single word').fill('black');
   await page.getByLabel('Spelling tile split').fill('b l a k');
   await page.getByRole('button', { name: 'Add word' }).click();
@@ -35,8 +37,11 @@ test('Blending Board requires tutor confirmation for suggested splits and preser
     ]));
   });
   await page.goto('/activities/blending-board.html');
+  await page.locator('#dictionaryDisclosure > summary').click();
   await expect(page.locator('#dictionary')).toContainText('old');
   await expect(page.locator('#currentWord')).toHaveText('old');
+  await page.locator('#toolsDisclosure > summary').click();
+  await page.locator('#toolsDisclosure .nested-disclosure').nth(0).locator('summary').click();
   await page.getByLabel('Single word').fill('whip');
   await expect(page.locator('#preview')).toContainText('whip: wh · i · p');
   await page.getByRole('button', { name: 'Add word' }).click();
@@ -56,12 +61,16 @@ test('Blending Board requires tutor confirmation for suggested splits and preser
 
 test('Blending Board suggested bulk tiles require one visible tutor confirmation and tiles work from keyboard', async ({ page }) => {
   await page.goto('/activities/blending-board.html');
+  await page.locator('#toolsDisclosure > summary').click();
+  await page.locator('#toolsDisclosure .nested-disclosure').nth(1).locator('summary').click();
   await page.getByLabel('Bulk add').fill('think');
   await page.getByRole('button', { name: 'Review bulk suggestions' }).click();
   await expect(page.locator('#feedback')).toContainText('think: th · i · n · k');
   await expect(page.locator('#dictionary')).not.toContainText('think');
   await page.getByRole('button', { name: 'Confirm suggested splits and add words' }).click();
   await expect(page.locator('#dictionary')).toContainText('think');
+  await page.locator('#dictionaryDisclosure > summary').click();
+  await page.locator('#filterDisclosure > summary').click();
   await page.getByRole('button', { name: '3 spelling tiles' }).click();
   const before = await page.locator('#currentWord').textContent();
   await page.getByRole('button', { name: /Spelling tile 1:/ }).focus();
@@ -77,6 +86,8 @@ test('Blending Board rejects hostile input and fits a narrow accessible viewport
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto('/activities/blending-board.html');
   await expect(page.locator('#currentWord')).toHaveText('fan');
+  await page.locator('#toolsDisclosure > summary').click();
+  await page.locator('#toolsDisclosure .nested-disclosure').nth(0).locator('summary').click();
   await page.getByLabel('Single word').fill('<img src=x onerror=alert(1)>');
   await expect(page.locator('#singleWord')).toHaveValue(/^[a-z]{0,12}$/);
   await page.locator('#addSingle').click();
@@ -106,9 +117,49 @@ test('Blending Board does not overwrite malformed existing storage', async ({ pa
   await page.addInitScript(value => localStorage.setItem('blending-board-words-standalone', value), original);
   await page.goto('/activities/blending-board.html');
   await expect(page.locator('#feedback')).toContainText('existing saved data will not be overwritten');
+  await page.locator('#toolsDisclosure > summary').click();
+  await page.locator('#toolsDisclosure .nested-disclosure').nth(0).locator('summary').click();
   await page.getByLabel('Single word').fill('zap');
   await page.getByLabel('Spelling tile split').fill('z a p');
   await page.getByRole('button', { name: 'Add word' }).click();
   await expect(page.locator('#dictionary')).toContainText('zap');
   expect(await page.evaluate(() => localStorage.getItem('blending-board-words-standalone'))).toBe(original);
+});
+
+test('Blending Board starts uncluttered and its tutor disclosures work by keyboard on narrow screens', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto('/activities/blending-board.html');
+  for (const id of ['filterDisclosure', 'toolsDisclosure', 'dictionaryDisclosure', 'promptDisclosure']) {
+    await expect(page.locator(`#${id}`)).not.toHaveAttribute('open', '');
+  }
+  await expect(page.getByRole('button', { name: 'Next word' })).toBeVisible();
+  await expect(page.locator('#singleWord')).toBeHidden();
+  await expect(page.locator('#dictionaryDisclosure')).not.toHaveAttribute('open', '');
+
+  const editorSummary = page.locator('#toolsDisclosure > summary');
+  await editorSummary.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#toolsDisclosure')).toHaveAttribute('open', '');
+  const singleSummary = page.locator('#toolsDisclosure .nested-disclosure').nth(0).locator('summary');
+  await singleSummary.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Single word')).toBeVisible();
+  await expect(singleSummary).toBeFocused();
+
+  await page.locator('#promptDisclosure > summary').focus();
+  await page.keyboard.press('Enter');
+  await page.getByLabel('Show prompt on the board').check();
+  await expect(page.locator('#prompt')).toBeVisible();
+  await expect(page.locator('#prompt')).toContainText('Read the tiles, then blend');
+
+  const dimensions = await page.evaluate(() => {
+    const targets = [...document.querySelectorAll('.home-link, summary, button')]
+      .filter(node => node.getClientRects().length)
+      .map(node => ({ label: node.textContent.trim(), height: node.getBoundingClientRect().height }));
+    return { client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth, targets };
+  });
+  expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.client);
+  expect(dimensions.targets.filter(target => target.height < 44)).toEqual([]);
+  const scan = await new AxeBuilder({ page }).analyze();
+  expect(scan.violations.map(v => ({ id: v.id, targets: v.nodes.map(n => n.target) }))).toEqual([]);
 });

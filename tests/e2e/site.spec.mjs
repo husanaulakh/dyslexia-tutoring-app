@@ -82,19 +82,24 @@ test('blending board changes only a matching sound and accepts longer spellings'
   await page.locator('.card[data-p="0"]').click();
   const changed = await page.locator('#currentWord').textContent();
   expect(changed.slice(1)).toBe(firstChanged.slice(1));
+  await page.locator('#toolsDisclosure > summary').click();
+  await page.getByText('Add one word', { exact: true }).click();
   await page.getByLabel('Single word').fill('black');
   await page.getByLabel('Spelling tile split').fill('b l a ck');
   await page.locator('#addSingle').click();
   await expect(page.locator('#currentWord')).toHaveText('black');
+  await page.locator('#dictionaryDisclosure > summary').click();
   await expect(page.locator('#dictionary')).toContainText('black');
   await page.locator('.card[data-p="0"]').click();
   await expect(page.locator('#currentWord')).toHaveText('black');
   await expect(page.locator('#feedback')).toContainText('No word in this list changes only this spelling tile');
+  await page.getByText('Add several words', { exact: true }).click();
   await page.getByLabel('Bulk add').fill('think');
   await page.locator('#addBulk').click();
   await page.getByRole('button', { name: 'Confirm suggested splits and add words' }).click();
   await expect(page.locator('#dictionary')).toContainText('think');
   await page.reload();
+  await page.locator('#dictionaryDisclosure > summary').click();
   await expect(page.locator('#dictionary')).toContainText('think');
 });
 
@@ -104,6 +109,8 @@ test('blending board rejects malicious storage and hostile word input without ex
   ])));
   await page.goto('/activities/blending-board.html');
   await expect(page.locator('#currentWord')).toHaveText('fan');
+  await page.locator('#toolsDisclosure > summary').click();
+  await page.getByText('Add one word', { exact: true }).click();
   await page.getByLabel('Single word').fill('<img src=x onerror=alert(1)>');
   await expect(page.locator('#singleWord')).toHaveValue(/^[a-z]{0,12}$/);
   await page.locator('#addSingle').click();

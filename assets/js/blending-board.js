@@ -10,7 +10,7 @@ let lastSaveError = loadedWords.error;
 const state = {
   words: loadedWords.items,
   soundMode: '3', lessonMode: 'current', currentChunks: ['f','a','n'], lastClicked: null,
-  showPrompt: false, showTools: true, showDictionary: true, singleTag: 'current', bulkTag: 'current',
+  showPrompt: false, singleTag: 'current', bulkTag: 'current',
   lessonWordIds: Array.isArray(context?.settings.wordIds) ? context.settings.wordIds : null,
   lessonCount: Number.isInteger(context?.settings.count) ? context.settings.count : null,
 };
@@ -41,18 +41,13 @@ function valid() {
   return state.lessonCount ? filtered.slice(0, Math.max(1, Math.min(100, state.lessonCount))) : filtered;
 }
 function sameExcept(a, b, changedIndex) { return a.length === b.length && a.every((part, i) => i === changedIndex || part === b[i]); }
-function feedback(message) { $('#feedback').textContent = message; $('#feedback').style.display = message ? 'block' : 'none'; }
+function feedback(message) { const root = $('#feedback'); root.textContent = message; root.hidden = !message; }
 function backgroundForTile(tile) {
   const letters = tile.split('');
   const hasVowel = letters.some(letter => vowels.has(letter));
   const hasConsonant = letters.some(letter => !vowels.has(letter));
-  if (hasVowel && hasConsonant) {
-    const vowelFirst = vowels.has(letters[0]);
-    const first = vowelFirst ? '#fb923c' : '#fff';
-    const second = vowelFirst ? '#fff' : '#fb923c';
-    return `linear-gradient(90deg,${first} 0%,${first} 50%,${second} 50%,${second} 100%)`;
-  }
-  return hasVowel ? '#fb923c' : '#fff';
+  if (hasVowel && hasConsonant) return '#fff0d8';
+  return hasVowel ? '#f6b84a' : '#fff';
 }
 function ensureCurrent() {
   const words = valid();
@@ -73,6 +68,9 @@ function renderFilters() {
     const button = document.createElement('button'); button.type = 'button'; button.className = `pill secondary ${state.lessonMode === key ? 'active' : ''}`; button.textContent = label;
     button.addEventListener('click', () => { state.lessonMode = key; ensureCurrent(); render(); }); $('#lessonFilters').append(button);
   }
+  const tileSummary = state.soundMode === 'both' ? '2–6 spelling tiles' : `${state.soundMode} spelling tiles`;
+  const groupSummary = state.lessonMode === 'both' ? 'all words' : state.lessonMode === 'previous' ? 'review' : 'this lesson';
+  $('#filterSummary').textContent = `${tileSummary} · ${groupSummary}`;
 }
 function renderBoard(focusTileIndex = null) {
   $('#currentWord').textContent = currentWord() || '—';
@@ -90,7 +88,7 @@ function renderBoard(focusTileIndex = null) {
     });
     stage.append(cards);
   }
-  $('#prompt').style.display = state.showPrompt ? 'block' : 'none';
+  $('#prompt').hidden = !state.showPrompt;
   $('#promptText').textContent = state.currentChunks.length ? ` ${state.currentChunks.join(' · ')} → ${currentWord()}` : '';
   if (focusTileIndex !== null) stage.querySelector(`[data-p="${focusTileIndex}"]`)?.focus({ preventScroll: true });
 }
@@ -116,14 +114,13 @@ function renderSegments(selector, selected, onChange) {
   }
 }
 function renderTools() {
-  $('#toolsBody').style.display = state.showTools ? 'flex' : 'none'; $('#toolsToggle').textContent = state.showTools ? 'Hide' : 'Show'; $('#promptToggle').textContent = state.showPrompt ? 'Hide' : 'Show';
   renderSegments('#singleTagSeg', state.singleTag, tag => { state.singleTag = tag; renderTools(); });
   renderSegments('#bulkTagSeg', state.bulkTag, tag => { state.bulkTag = tag; renderTools(); }); preview();
 }
 function preview() {
   const word = clean($('#singleWord').value); const root = $('#preview'); root.replaceChildren();
-  if (!word) { root.style.display = 'none'; return; }
-  root.style.display = 'block';
+  if (!word) { root.hidden = true; return; }
+  root.hidden = false;
   const title = document.createElement('div'); title.className = 'label'; title.textContent = 'Preview'; root.append(title);
   const raw = $('#soundSplit').value.trim();
   const chunks = raw ? parse(raw, word) : autoChunk(word);
@@ -149,7 +146,7 @@ function addSingle() {
   feedback(`${existing >= 0 ? 'Updated' : 'Added'} ${word} with ${chunks.length} spelling tiles (${lessonLabel(state.singleTag)})${persisted ? '.' : ` for this session only.${saveMessage()}`}`); render();
 }
 function renderBulkPreview() {
-  const root = $('#feedback'); root.replaceChildren(); root.style.display = pendingBulk.length ? 'block' : 'none';
+  const root = $('#feedback'); root.replaceChildren(); root.hidden = !pendingBulk.length;
   if (!pendingBulk.length) return;
   const text = document.createElement('p'); text.textContent = `Review these tutor-generated spelling tiles before adding: ${pendingBulk.map(item => `${item.word}: ${item.chunks.join(' · ')}`).join('; ')}`; root.append(text);
   $('#confirmBulk').hidden = false;
@@ -171,8 +168,8 @@ function confirmBulk() {
   feedback(`Tutor-confirmed and added ${added} ${added === 1 ? 'word' : 'words'}${updated ? `; updated ${updated}` : ''}${persisted ? '.' : ` for this session only.${saveMessage()}`}`); render();
 }
 function renderDictionary() {
-  $('#dictionary').style.display = state.showDictionary ? 'block' : 'none'; $('#dictToggle').textContent = state.showDictionary ? 'Hide' : 'Show';
-  $('#clearAll').style.display = state.words.length ? 'inline-block' : 'none'; if (!state.showDictionary) return;
+  $('#clearAll').hidden = !state.words.length;
+  $('#dictionaryCount').textContent = `${state.words.length} ${state.words.length === 1 ? 'word' : 'words'}`;
   const groups = new Map();
   state.words.forEach((item, index) => { const count = item.chunks.length; if (!groups.has(count)) groups.set(count, []); groups.get(count).push({ item, index }); });
   const root = $('#dictionary'); root.replaceChildren();
@@ -193,7 +190,7 @@ function resetAll() { state.words = BLENDING_BOARD_STARTER_WORDS.map(item => ({ 
 function render() { renderFilters(); renderBoard(); renderTools(); renderDictionary(); }
 
 $('#nextBtn').addEventListener('click', nextWord); $('#randomBtn').addEventListener('click', randomWord); $('#startBtn').addEventListener('click', startList); $('#resetBtn').addEventListener('click', resetAll); $('#clearAll').addEventListener('click', clearAll);
-$('#toolsToggle').addEventListener('click', () => { state.showTools = !state.showTools; renderTools(); }); $('#dictToggle').addEventListener('click', () => { state.showDictionary = !state.showDictionary; renderDictionary(); }); $('#promptToggle').addEventListener('click', () => { state.showPrompt = !state.showPrompt; renderTools(); renderBoard(); });
+$('#promptToggle').addEventListener('change', event => { state.showPrompt = event.target.checked; renderBoard(); });
 $('#addSingle').addEventListener('click', addSingle); $('#addBulk').addEventListener('click', addBulk); $('#confirmBulk').addEventListener('click', confirmBulk);
 $('#singleWord').addEventListener('input', event => { event.target.value = clean(event.target.value).slice(0,12); confirmedSuggestion = ''; preview(); }); $('#soundSplit').addEventListener('input', preview); $('#singleWord').addEventListener('keydown', event => { if (event.key === 'Enter') addSingle(); });
 if (context) {
