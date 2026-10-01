@@ -135,10 +135,12 @@ test('a failed active-lesson clear never duplicates its completion summary', asy
       return original.call(this, key);
     };
   });
+  if (!(await page.locator('#lessonToolbar details').evaluate(node => node.open))) await page.locator('#lessonToolbar').getByText('Lesson options', { exact: true }).click();
   await page.locator('#lessonToolbar').getByRole('button', { name: 'End lesson' }).click();
   await expect(page.locator('#lessonToolbar')).toContainText('Could not end the lesson');
   const id = (await sessions(page))[0].id;
   await page.evaluate(() => { window.__clearBlocked = false; });
+  if (!(await page.locator('#lessonToolbar details').evaluate(node => node.open))) await page.locator('#lessonToolbar').getByText('Lesson options', { exact: true }).click();
   await page.locator('#lessonToolbar').getByRole('button', { name: 'End lesson' }).click();
   await expect(page).toHaveURL(/lesson-builder\.html(?:\?completed=[A-Za-z0-9_-]+)?$/);
   const records = await sessions(page);
@@ -182,6 +184,7 @@ test('ending a lesson preserves its context when the pinned learner is missing',
   await seedLesson(page, 'reading-words', { listId: 'test-words' });
   await page.evaluate(() => localStorage.setItem('bright-steps-student-progress', JSON.stringify({ schemaVersion: 3, students: [], selectedStudentId: '', sessions: [], assessment: [] })));
   await page.reload();
+  if (!(await page.locator('#lessonToolbar details').evaluate(node => node.open))) await page.locator('#lessonToolbar').getByText('Lesson options', { exact: true }).click();
   await page.locator('#lessonToolbar').getByRole('button', { name: 'End lesson' }).click();
   await expect(page).toHaveURL(/reading-words\.html$/);
   expect(await page.evaluate(() => sessionStorage.getItem('bright-steps-active-lesson'))).not.toBeNull();
@@ -194,6 +197,7 @@ for (const activity of ['reading-words', 'paragraph-reading']) {
     await seedLesson(page, activity, { listId: 'deleted-list' });
     await expect(page.locator('#tutorStatus')).toContainText('not available');
     await expect(page.getByRole('button', { name: 'Start reading' })).toBeDisabled();
+    await page.locator('#lessonToolbar').getByText('Lesson options', { exact: true }).click();
     await page.getByRole('link', { name: 'Review lesson plan' }).click();
     await expect(page).toHaveURL(/lesson-builder\.html$/);
     expect(await page.evaluate(() => sessionStorage.getItem('bright-steps-active-lesson'))).not.toBeNull();

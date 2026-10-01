@@ -1,10 +1,32 @@
-#lessonToolbar { margin: 1rem 0; font: 1rem/1.5 system-ui, sans-serif; }
-.lesson-toolbar { border: 1px solid var(--brand-line); border-radius: 16px; padding: 1rem; background: var(--brand-panel); color: var(--brand-ink); }
-.lesson-toolbar p { margin: 0 0 .65rem; overflow-wrap: anywhere; }
-.lesson-toolbar__controls { display: flex; flex-wrap: wrap; gap: .5rem; }
-.lesson-toolbar button, .presentation-controls button, .presentation-controls select { padding: .55rem .8rem; border: 1px solid var(--brand-green); border-radius: 8px; background: white; color: var(--brand-ink); font: inherit; min-height: 44px; }
+#lessonToolbar { margin: .65rem 0; font: 1rem/1.45 system-ui, sans-serif; }
+.lesson-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .3rem .8rem; border: 1px solid var(--brand-line); border-radius: 12px; padding: .7rem; background: var(--brand-panel); color: var(--brand-ink); }
+.lesson-toolbar p { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.lesson-toolbar__identity { grid-column: 1; grid-row: 1; font-weight: 750; }
+.lesson-toolbar__learner { grid-column: 1; grid-row: 2; color: var(--brand-ink); font-size: .9rem; }
+.lesson-toolbar__progress-label { grid-column: 1; grid-row: 3; padding-top: .25rem; font-weight: 650; }
+.lesson-toolbar__progress { grid-column: 1; grid-row: 4; width: 100%; height: .55rem; accent-color: var(--brand-green); }
+.lesson-toolbar__controls { grid-column: 2; grid-row: 1 / 4; display: flex; flex-wrap: wrap; justify-content: flex-end; align-self: center; gap: .4rem; }
+.lesson-toolbar button { box-sizing: border-box; max-width: 100%; min-height: 44px; padding: .5rem .75rem; border: 1px solid var(--brand-green); border-radius: 8px; background: white; color: var(--brand-ink); font: inherit; overflow-wrap: anywhere; }
 .lesson-toolbar button:disabled { opacity: .55; }
-#lessonToolbar a { color: var(--brand-green-dark); }
+.lesson-toolbar .lesson-toolbar__finish { background: var(--brand-green); color: white; font-weight: 700; }
+.lesson-toolbar__options { grid-column: 2; grid-row: 4; justify-self: end; max-width: 100%; }
+.lesson-toolbar__options summary { display: flex; align-items: center; gap: .6rem; min-height: 44px; padding: 0 .7rem; border: 1px solid var(--brand-line); border-radius: 8px; background: var(--brand-green-soft); font-weight: 650; cursor: pointer; overflow-wrap: anywhere; }
+.lesson-toolbar__options summary::after { content: ""; flex: 0 0 .55rem; width: .55rem; height: .55rem; margin-inline-start: auto; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-.12rem) rotate(45deg); }
+.lesson-toolbar__options[open] summary::after { transform: translateY(.12rem) rotate(225deg); }
+.lesson-toolbar__option-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .5rem 0 0; }
+#lessonToolbar a { display: inline-flex; align-items: center; min-height: 44px; padding: .35rem .65rem; color: var(--brand-green-dark); font-weight: 650; overflow-wrap: anywhere; }
+.lesson-toolbar :focus-visible, #lessonToolbar a:focus-visible { outline: 3px solid var(--brand-orange-dark); outline-offset: 2px; }
+.lesson-toolbar [role=status] { grid-column: 1 / -1; color: var(--brand-orange-dark); }
+
+@media (max-width: 560px) {
+  .lesson-toolbar { grid-template-columns: minmax(0, 1fr); }
+  .lesson-toolbar__identity, .lesson-toolbar__learner, .lesson-toolbar__progress-label, .lesson-toolbar__progress, .lesson-toolbar__controls, .lesson-toolbar__options, .lesson-toolbar [role=status] { grid-column: 1; grid-row: auto; }
+  .lesson-toolbar__controls { justify-content: flex-start; }
+  .lesson-toolbar__controls button { flex: 1 1 auto; }
+  .lesson-toolbar__options { justify-self: stretch; }
+  .lesson-toolbar__options summary { width: 100%; box-sizing: border-box; }
+  .lesson-toolbar__option-actions { flex-direction: column; align-items: stretch; }
+}
 
 .practice-save-notice { margin: 1rem 0; padding: 1rem; border: 2px solid var(--brand-green); border-radius: .75rem; background: var(--brand-panel); }
 .practice-save-notice p { margin-top: 0; }

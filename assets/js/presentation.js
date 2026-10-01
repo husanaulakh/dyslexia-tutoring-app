@@ -17,6 +17,7 @@ host.className = 'presentation-controls';
 host.setAttribute('aria-label', 'Presentation controls');
 const toggle = make('button', 'Show learner view');
 toggle.type = 'button';
+toggle.className = 'presentation-controls__learner-toggle';
 toggle.setAttribute('aria-pressed', 'false');
 toggle.addEventListener('click', () => {
   const enabled = document.body.classList.toggle('learner-view');
@@ -44,9 +45,17 @@ function select(label, values, key, display) {
 }
 const status = make('p');
 status.setAttribute('role', 'status');
+status.className = 'presentation-controls__status';
 const notice = make('p', 'Learner view hides editing tools on this screen. Anyone viewing a shared screen sees this same view.');
 notice.className = 'presentation-note';
-host.append(toggle, select('Text size', sizes, 'size', value => `${value}%`), select('Line spacing', spacings, 'spacing', value => value.toFixed(1)), notice, status);
+const options = make('details');
+options.className = 'presentation-controls__options';
+const summary = make('summary', 'Display options');
+const settings = make('div');
+settings.className = 'presentation-controls__settings';
+settings.append(select('Text size', sizes, 'size', value => `${value}%`), select('Line spacing', spacings, 'spacing', value => value.toFixed(1)));
+options.append(summary, settings, notice);
+host.append(toggle, options, status);
 const main = document.querySelector('main');
 const fixedHost = document.getElementById('presentationHost');
 if (fixedHost) fixedHost.append(host); else main?.prepend(host);

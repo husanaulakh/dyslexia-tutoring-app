@@ -24,7 +24,7 @@ function render() {
     }
     if (matchesActivityPath(location.pathname, '/activities/lesson-builder.html')) return;
     const link = element('a', 'Plan a lesson');
-    link.href = '/activities/lesson-builder.html';
+    link.href = '/activities/lesson-builder.html?wizard=1';
     host.append(link);
     return;
   }
@@ -34,22 +34,36 @@ function render() {
   const studentLoad = loadStudentData();
   const student = studentLoad.error ? null : studentLoad.data.students.find(item => item.id === active.studentId);
   const step = active.template.steps[active.index];
-  const label = element('p', `${active.template.name} · ${student?.name ?? 'Learner unavailable'} · Step ${active.index + 1} of ${active.template.steps.length}: ${getActivity(step.activityId).label}`);
-  if (active.completedStepIds.includes(step.id)) label.append(document.createTextNode(' · Previously completed'));
+  const identity = element('p', active.template.name);
+  identity.className = 'lesson-toolbar__identity';
+  const learner = element('p', `Learner: ${student?.name ?? 'unavailable'}`);
+  learner.className = 'lesson-toolbar__learner';
+  const progressText = `Step ${active.index + 1} of ${active.template.steps.length} · ${getActivity(step.activityId).label}`;
+  const progressLabel = element('p', progressText);
+  progressLabel.className = 'lesson-toolbar__progress-label';
+  if (active.completedStepIds.includes(step.id)) progressLabel.append(document.createTextNode(' · Previously completed'));
+  const progress = element('progress');
+  progress.className = 'lesson-toolbar__progress';
+  progress.max = active.template.steps.length;
+  progress.value = active.index + 1;
+  progress.setAttribute('aria-label', `Lesson progress: step ${active.index + 1} of ${active.template.steps.length}`);
   const status = element('p', error ? 'Lesson storage is unavailable.' : '');
   status.setAttribute('role', 'status');
   const controls = element('div');
   controls.className = 'lesson-toolbar__controls';
-  function button(text, action, disabled = false) {
+  controls.setAttribute('role', 'group');
+  controls.setAttribute('aria-label', 'Lesson step navigation');
+  function button(text, action, disabled = false, destination = controls, className = '') {
     const node = element('button', text);
     node.type = 'button';
     node.disabled = disabled;
+    if (className) node.className = className;
     node.addEventListener('click', () => {
       const ready = window.dispatchEvent(new CustomEvent('bright-steps:before-lesson-navigation', { cancelable: true }));
       if (!ready) { status.textContent = 'Completed practice outcomes could not be saved. Retry when browser storage is available.'; return; }
       action();
     });
-    controls.append(node);
+    destination.append(node);
   }
   function navigate(result) {
     if (!result.ok) { status.textContent = 'Could not update the lesson. Browser storage is unavailable.'; return; }
@@ -76,12 +90,19 @@ function render() {
     if (!result.ok) { status.textContent = 'Could not save step completion.'; return; }
     if (result.complete) finishLesson(result.active);
     else navigate(result);
-  }, !matchesActivityPath(location.pathname, getActivity(step.activityId).path));
+  }, !matchesActivityPath(location.pathname, getActivity(step.activityId).path), controls, 'lesson-toolbar__finish');
   button('Next', () => navigate(moveLessonStep(active.index + 1)), active.index === active.template.steps.length - 1);
-  button('End lesson', () => finishLesson(active));
+  const options = element('details');
+  options.className = 'lesson-toolbar__options';
+  options.append(element('summary', 'Lesson options'));
+  const optionActions = element('div');
+  optionActions.className = 'lesson-toolbar__option-actions';
+  button('End lesson', () => finishLesson(active), false, optionActions);
   const planLink = element('a', 'Review lesson plan');
   planLink.href = '/activities/lesson-builder.html';
-  section.append(label, controls, planLink, status);
+  optionActions.append(planLink);
+  options.append(optionActions);
+  section.append(identity, learner, progressLabel, progress, controls, options, status);
   host.append(section);
 }
 render();

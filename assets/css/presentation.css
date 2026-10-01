@@ -1,8 +1,27 @@
-.presentation-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin: 1rem 0; padding: .8rem; border: 1px solid var(--brand-line); border-radius: 12px; background: var(--brand-panel); font: 1rem/1.5 system-ui, sans-serif; }
-.presentation-controls label { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; }
-.presentation-controls button, .presentation-controls select { min-height: 44px; padding: .5rem .7rem; border: 1px solid var(--brand-green-dark); border-radius: 8px; background: white; color: var(--brand-ink); font: inherit; }
-.presentation-note, .presentation-controls [role=status] { flex-basis: 100%; margin: 0; font-size: .85rem; color: var(--brand-ink); }
+.presentation-controls { display: flex; align-items: flex-start; flex-wrap: wrap; gap: .5rem; margin: .65rem 0; padding: .5rem; border: 1px solid var(--brand-line); border-radius: 10px; background: var(--brand-panel); color: var(--brand-ink); font: 1rem/1.4 system-ui, sans-serif; }
+.presentation-controls button, .presentation-controls select { box-sizing: border-box; max-width: 100%; min-height: 44px; padding: .5rem .7rem; border: 1px solid var(--brand-green-dark); border-radius: 8px; background: white; color: var(--brand-ink); font: inherit; }
+.presentation-controls__learner-toggle { font-weight: 650; overflow-wrap: anywhere; }
+.presentation-controls__learner-toggle[aria-pressed="true"] { background: var(--brand-green); color: white; font-weight: 700; }
+.presentation-controls__options { min-width: 0; max-width: 100%; }
+.presentation-controls__options summary { display: flex; align-items: center; gap: .6rem; min-height: 44px; padding: 0 .7rem; border: 1px solid var(--brand-line); border-radius: 8px; background: var(--brand-green-soft); font-weight: 650; cursor: pointer; overflow-wrap: anywhere; }
+.presentation-controls__options summary::after { content: ""; flex: 0 0 .55rem; width: .55rem; height: .55rem; margin-inline-start: auto; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-.12rem) rotate(45deg); }
+.presentation-controls__options[open] summary::after { transform: translateY(.12rem) rotate(225deg); }
+.presentation-controls__settings { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; max-width: 100%; padding: .65rem 0 .25rem; }
+.presentation-controls label { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; min-width: 0; overflow-wrap: anywhere; }
+.presentation-controls select { min-width: 6.5rem; }
+.presentation-note { max-width: 38rem; margin: .35rem 0 0; font-size: .85rem; overflow-wrap: anywhere; }
+.presentation-controls__status { flex-basis: 100%; margin: 0; color: var(--brand-orange-dark); font-size: .9rem; overflow-wrap: anywhere; }
+.presentation-controls__status:empty { display: none; }
+.presentation-controls :focus-visible { outline: 3px solid var(--brand-orange-dark); outline-offset: 2px; }
 .learner-view [data-tutor-tools], .learner-view #studentTracker { display: none !important; }
 [data-reading-content][data-reading-base] { font-size: calc(var(--reading-base-size) * var(--reading-scale, 1)) !important; line-height: var(--reading-spacing, 1.5) !important; overflow-wrap: anywhere; }
 
 .card-wrap, .flash-card { min-height: calc(370px * var(--reading-scale, 1) * var(--reading-spacing, 1.5) / 1.5); }
+
+@media (max-width: 420px) {
+  .presentation-controls { align-items: stretch; }
+  .presentation-controls__learner-toggle, .presentation-controls__options { flex: 1 1 100%; }
+  .presentation-controls__learner-toggle { white-space: normal; }
+  .presentation-controls__settings, .presentation-controls label { align-items: stretch; flex-direction: column; }
+  .presentation-controls select { width: 100%; }
+}

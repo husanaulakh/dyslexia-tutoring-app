@@ -43,6 +43,7 @@ test('a tutor builds in the wizard, revisits and resumes activities, then sees t
   await page.locator('#lessonToolbar').getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page.locator('#lessonToolbar')).toContainText('Previously completed');
   await page.locator('#lessonToolbar').getByRole('button', { name: 'Next', exact: true }).click();
+  await page.locator('#lessonToolbar').getByText('Lesson options', { exact: true }).click();
   await page.getByRole('link', { name: 'Review lesson plan' }).click();
   await expect(page.getByRole('button', { name: 'Start lesson', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Resume lesson · Tutor walkthrough' }).click();
